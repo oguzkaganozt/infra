@@ -55,10 +55,6 @@ configure_nomachine_user() {
     useradd --create-home --shell /bin/bash --groups sudo "$user_name"
   fi
 
-  if [[ -n "${NOMACHINE_PASSWORD:-}" ]]; then
-    log "Configuring NoMachine login user: $user_name"
-    printf '%s:%s\n' "$user_name" "$NOMACHINE_PASSWORD" | chpasswd
-  else
-    log "NOMACHINE_PASSWORD is missing; NoMachine login password was not changed"
-  fi
+  log "Configuring NoMachine login user: $user_name"
+  printf '%s:%s\n' "$user_name" "${NOMACHINE_PASSWORD:-password}" | chpasswd
 }

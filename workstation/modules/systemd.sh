@@ -8,8 +8,8 @@ install_backup_timer() {
     return
   fi
 
-  if [[ -z "${RESTIC_REPOSITORY:-}" || -z "${RESTIC_PASSWORD:-}" ]]; then
-    log "Skipping systemd backup timer because Restic secrets are missing"
+  if [[ -z "${RESTIC_PASSWORD:-}" || -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
+    log "Skipping systemd backup timer because Restic/R2 secrets are missing"
     return
   fi
 

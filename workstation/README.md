@@ -54,31 +54,34 @@ Create one Infisical project, for example `workstation`, with a `prod` environme
 
 If you prefer machine identities, add a Universal Auth machine identity to the project and give it access to read the environment secrets.
 
-Store these secrets in Infisical:
+Store only these required secrets in Infisical:
 
 ```bash
 TS_AUTHKEY='<tailscale-auth-key>'
-TS_HOSTNAME='gpu-workstation'
-TS_ENABLE_SSH='1'
-
-NOMACHINE_USER='workstation'
-NOMACHINE_PASSWORD='password'
-INSTALL_NOMACHINE='1'
-NOMACHINE_DEB_URL='https://www.nomachine.com/free/linux/64/deb'
-INSTALL_DESKTOP='1'
-DESKTOP_PACKAGES='xfce4 xfce4-goodies dbus-x11 x11-xserver-utils'
-
-RESTIC_REPOSITORY='s3:https://<cloudflare-account-id>.r2.cloudflarestorage.com/<bucket>/main'
 RESTIC_PASSWORD='<restic-encryption-password>'
 AWS_ACCESS_KEY_ID='<r2-access-key-id>'
 AWS_SECRET_ACCESS_KEY='<r2-secret-access-key>'
-AWS_DEFAULT_REGION='auto'
-
-WORKSPACE_DIR='/workspace'
-RESTIC_TAG='workspace'
-INSTALL_SYSTEMD_TIMER='1'
-INSTALL_UFW='1'
 ```
+
+Everything else has code defaults:
+
+| Setting | Default |
+|---|---|
+| `WORKSPACE_DIR` | `/workspace` |
+| `RESTIC_TAG` | `workspace` |
+| `RESTIC_REPOSITORY` | `s3:https://c7a7c7c9096e7a8fc974cec9ded52671.r2.cloudflarestorage.com/vast-workspace/main` |
+| `AWS_DEFAULT_REGION` | `auto` |
+| `NOMACHINE_USER` | `workstation` |
+| `NOMACHINE_PASSWORD` | `password` |
+| `NOMACHINE_DEB_URL` | `https://www.nomachine.com/free/linux/64/deb` |
+| `INSTALL_DESKTOP` | `1` |
+| `DESKTOP_PACKAGES` | `xfce4 xfce4-goodies dbus-x11 x11-xserver-utils` |
+| `INSTALL_NOMACHINE` | `1` |
+| `INSTALL_SYSTEMD_TIMER` | `1` |
+| `INSTALL_UFW` | `1` |
+| `TS_ENABLE_SSH` | `1` |
+
+Optional Infisical overrides are fine, but not required. The most useful optional one is `TS_HOSTNAME`, for example `gpu-workstation`.
 
 The provider only sees the Infisical bootstrap token or machine identity credentials. Real workstation secrets are fetched at bootstrap and written root-only to `/etc/workstation.env`.
 
@@ -87,13 +90,13 @@ The provider only sees the Infisical bootstrap token or machine identity credent
 Use Tailscale endpoints instead of provider public IPs or random port mappings:
 
 ```text
-SSH: ssh workstation@gpu-workstation
-NoMachine: gpu-workstation:4000
-Jupyter: http://gpu-workstation:8888
-Gradio: http://gpu-workstation:7860
-Dev server: http://gpu-workstation:3000
-FastAPI: http://gpu-workstation:8000
-Web app: http://gpu-workstation:8080
+SSH: ssh workstation@<tailscale-hostname-or-ip>
+NoMachine: <tailscale-hostname-or-ip>:4000
+Jupyter: http://<tailscale-hostname-or-ip>:8888
+Gradio: http://<tailscale-hostname-or-ip>:7860
+Dev server: http://<tailscale-hostname-or-ip>:3000
+FastAPI: http://<tailscale-hostname-or-ip>:8000
+Web app: http://<tailscale-hostname-or-ip>:8080
 ```
 
 Run this on the VM for current connection and backup details:

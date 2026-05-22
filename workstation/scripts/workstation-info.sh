@@ -17,7 +17,10 @@ fi
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
 RESTIC_TAG="${RESTIC_TAG:-workspace}"
+RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-s3:https://c7a7c7c9096e7a8fc974cec9ded52671.r2.cloudflarestorage.com/vast-workspace/main}"
+AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
 NOMACHINE_USER="${NOMACHINE_USER:-workstation}"
+export RESTIC_REPOSITORY AWS_DEFAULT_REGION
 
 tailscale_ip() {
   if command -v tailscale >/dev/null 2>&1; then
@@ -32,7 +35,7 @@ timer_state() {
 }
 
 latest_snapshot() {
-  if [[ -z "${RESTIC_REPOSITORY:-}" || -z "${RESTIC_PASSWORD:-}" ]] || ! command -v restic >/dev/null 2>&1; then
+  if [[ -z "${RESTIC_PASSWORD:-}" || -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]] || ! command -v restic >/dev/null 2>&1; then
     return
   fi
 

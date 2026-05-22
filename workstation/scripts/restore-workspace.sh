@@ -11,9 +11,12 @@ fi
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
 RESTIC_TAG="${RESTIC_TAG:-workspace}"
+RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-s3:https://c7a7c7c9096e7a8fc974cec9ded52671.r2.cloudflarestorage.com/vast-workspace/main}"
+AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
+export RESTIC_REPOSITORY AWS_DEFAULT_REGION
 
-if [[ -z "${RESTIC_REPOSITORY:-}" || -z "${RESTIC_PASSWORD:-}" ]]; then
-  printf 'RESTIC_REPOSITORY and RESTIC_PASSWORD are required.\n' >&2
+if [[ -z "${RESTIC_PASSWORD:-}" || -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
+  printf 'RESTIC_PASSWORD, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY are required.\n' >&2
   exit 1
 fi
 

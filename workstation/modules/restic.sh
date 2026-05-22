@@ -14,6 +14,12 @@ workspace_owner() {
   printf 'root:root'
 }
 
+set_restic_defaults() {
+  RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-s3:https://c7a7c7c9096e7a8fc974cec9ded52671.r2.cloudflarestorage.com/vast-workspace/main}"
+  AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
+  export RESTIC_REPOSITORY AWS_DEFAULT_REGION
+}
+
 install_helper_scripts() {
   local source_dir="$1"
 
@@ -24,12 +30,13 @@ install_helper_scripts() {
 }
 
 restore_workspace() {
+  set_restic_defaults
   local workspace_dir="${WORKSPACE_DIR:-/workspace}"
   mkdir -p "$workspace_dir"
   chown "$(workspace_owner)" "$workspace_dir"
 
-  if [[ -z "${RESTIC_REPOSITORY:-}" || -z "${RESTIC_PASSWORD:-}" ]]; then
-    log "RESTIC_REPOSITORY or RESTIC_PASSWORD is missing; skipping restore"
+  if [[ -z "${RESTIC_PASSWORD:-}" || -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" ]]; then
+    log "Restic/R2 secrets are missing; skipping restore"
     return
   fi
 

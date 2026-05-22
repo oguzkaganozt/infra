@@ -70,7 +70,6 @@ Everything else has code defaults:
 | `WORKSPACE_DIR` | `/workspace` |
 | `RESTIC_TAG` | `workspace` |
 | `RESTIC_REPOSITORY` | `s3:https://c7a7c7c9096e7a8fc974cec9ded52671.r2.cloudflarestorage.com/vast-workspace/main` |
-| `AWS_DEFAULT_REGION` | `auto` |
 | `NOMACHINE_USER` | `workstation` |
 | `NOMACHINE_PASSWORD` | `password` |
 | `NOMACHINE_DEB_URL` | `https://www.nomachine.com/free/linux/64/deb` |

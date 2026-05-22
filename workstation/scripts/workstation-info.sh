@@ -40,7 +40,7 @@ latest_snapshot() {
 }
 
 endpoint_host="${TS_HOSTNAME:-}"
-tail_ip="$(tailscale_ip)"
+tail_ip="$(tailscale_ip || true)"
 if [[ -z "$endpoint_host" ]]; then
   endpoint_host="$tail_ip"
 fi

@@ -14,10 +14,30 @@ install_nomachine() {
   log "Installing NoMachine"
   local deb_path=/tmp/nomachine.deb
   local deb_url="${NOMACHINE_DEB_URL:-https://www.nomachine.com/free/linux/64/deb}"
+  local watchdog_pid
 
   curl -fsSL "$deb_url" -o "$deb_path"
   dpkg-deb --info "$deb_path" >/dev/null
-  apt_get install -y "$deb_path"
+
+  # NoMachine 9.x can occasionally hang in nxserver.bin --subscription during
+  # package post-install on fresh cloud images, even after the service is ready.
+  (
+    while true; do
+      sleep 30
+      pkill -9 -f '[n]xserver\.bin --subscription' 2>/dev/null || true
+    done
+  ) &
+  watchdog_pid="$!"
+
+  if ! timeout "${NOMACHINE_INSTALL_TIMEOUT:-1800}" apt_get install -y "$deb_path"; then
+    kill "$watchdog_pid" 2>/dev/null || true
+    wait "$watchdog_pid" 2>/dev/null || true
+    rm -f "$deb_path"
+    die "NoMachine install failed or timed out"
+  fi
+
+  kill "$watchdog_pid" 2>/dev/null || true
+  wait "$watchdog_pid" 2>/dev/null || true
   rm -f "$deb_path"
 
   systemctl enable --now nxserver.service || true

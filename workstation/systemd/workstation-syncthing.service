@@ -1,0 +1,13 @@
+[Unit]
+Description=Syncthing workspace sync
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=workstation
+ExecStart=/usr/bin/syncthing serve --no-browser --home=/home/workstation/.local/state/syncthing
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

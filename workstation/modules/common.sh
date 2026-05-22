@@ -1,35 +1,34 @@
 #!/usr/bin/env bash
 
-WORKSTATION_ENV_FILE="${WORKSTATION_ENV_FILE:-/etc/workstation.env}"
-
 log() {
-  printf '[workstation] %s\n' "$*"
+	printf '[workstation] %s\n' "$*"
 }
 
 die() {
-  printf '[workstation] ERROR: %s\n' "$*" >&2
-  exit 1
+	printf '[workstation] ERROR: %s\n' "$*" >&2
+	exit 1
 }
 
 require_root() {
-  if [[ "${EUID}" -ne 0 ]]; then
-    die "This script must run as root. Use sudo -E to preserve bootstrap env vars."
-  fi
+	if [[ "${EUID}" -ne 0 ]]; then
+		die "This script must run as root. Use sudo -E to preserve bootstrap env vars."
+	fi
 }
 
 apt_get() {
-  apt-get -o DPkg::Lock::Timeout=600 "$@"
+	apt-get -o DPkg::Lock::Timeout=600 "$@"
 }
 
-load_workstation_env() {
-  if [[ -f "$WORKSTATION_ENV_FILE" ]]; then
-    set -a
-    # shellcheck disable=SC1090
-    source "$WORKSTATION_ENV_FILE"
-    set +a
-  fi
+apt_update_once() {
+	if [[ "${WORKSTATION_APT_UPDATED:-0}" == "1" ]]; then
+		return
+	fi
+
+	apt_get update
+	WORKSTATION_APT_UPDATED=1
 }
 
-service_is_active() {
-  systemctl is-active --quiet "$1" 2>/dev/null
+ensure_apt_packages() {
+	apt_update_once
+	apt_get install -y "$@"
 }

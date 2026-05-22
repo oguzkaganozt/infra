@@ -1,0 +1,24 @@
+#cloud-config
+package_update: true
+packages:
+  - ca-certificates
+  - curl
+  - git
+
+write_files:
+  - path: /etc/workstation-bootstrap.env
+    permissions: "0600"
+    content: |
+      # Choose one Infisical auth mode.
+      INFISICAL_TOKEN='<infisical-service-token>'
+      # INFISICAL_CLIENT_ID='<machine-identity-client-id>'
+      # INFISICAL_CLIENT_SECRET='<machine-identity-client-secret>'
+      # INFISICAL_PROJECT_ID='<project-id>'
+      # INFISICAL_ENV='prod'
+
+      WORKSTATION_REPO_URL='https://github.com/oguzkaganozt/infra.git'
+      WORKSTATION_REPO_BRANCH='main'
+      WORKSTATION_REPO_DIR='/opt/workstation-infra'
+
+runcmd:
+  - [bash, -lc, 'set -a; . /etc/workstation-bootstrap.env; set +a; if [ ! -d "$WORKSTATION_REPO_DIR/.git" ]; then git clone --branch "$WORKSTATION_REPO_BRANCH" "$WORKSTATION_REPO_URL" "$WORKSTATION_REPO_DIR"; fi; bash "$WORKSTATION_REPO_DIR/workstation/bootstrap.sh"']

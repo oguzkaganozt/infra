@@ -1,34 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV_FILE="${ENV_FILE:-/etc/workstation.env}"
-if [[ -f "$ENV_FILE" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set +a
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$script_dir/../lib/env.sh" ]]; then
+	# shellcheck disable=SC1091
+	source "$script_dir/../lib/env.sh"
+else
+	# shellcheck disable=SC1091
+	source "${WORKSTATION_LIB_DIR:-/usr/local/lib/workstation}/env.sh"
 fi
 
-WORKSTATION_USER="${WORKSTATION_USER:-workstation}"
+load_workstation_env
+set_workstation_defaults
 
 if [[ "${EUID}" -ne 0 ]]; then
-  printf 'Run as root: sudo workstation-github-auth\n' >&2
-  exit 1
+	printf 'Run as root: sudo workstation-github-auth\n' >&2
+	exit 1
 fi
 
 if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-  printf 'GITHUB_TOKEN is missing from %s.\n' "$ENV_FILE" >&2
-  exit 1
+	printf 'GITHUB_TOKEN is missing from %s.\n' "$WORKSTATION_ENV_FILE" >&2
+	exit 1
 fi
 
 if ! id "$WORKSTATION_USER" >/dev/null 2>&1; then
-  printf 'Workstation user does not exist: %s\n' "$WORKSTATION_USER" >&2
-  exit 1
+	printf 'Workstation user does not exist: %s\n' "$WORKSTATION_USER" >&2
+	exit 1
 fi
 
 if ! command -v gh >/dev/null 2>&1; then
-  apt-get -o DPkg::Lock::Timeout=600 update
-  apt-get -o DPkg::Lock::Timeout=600 install -y gh
+	apt-get -o DPkg::Lock::Timeout=600 update
+	apt-get -o DPkg::Lock::Timeout=600 install -y gh
 fi
 
 sudo -H -u "$WORKSTATION_USER" env WORKSTATION_GITHUB_TOKEN="$GITHUB_TOKEN" bash -c '

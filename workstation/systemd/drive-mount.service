@@ -1,0 +1,13 @@
+[Unit]
+Description=Mount Google Drive with rclone
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/workstation-mount-drive
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

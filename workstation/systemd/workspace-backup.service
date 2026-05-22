@@ -1,9 +1,0 @@
-[Unit]
-Description=Back up workstation workspace to restic repository
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-Type=oneshot
-EnvironmentFile=/etc/workstation.env
-ExecStart=/usr/local/bin/workstation-backup-workspace

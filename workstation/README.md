@@ -1,8 +1,8 @@
 # workstation
 
-Vendor-agnostic bootstrap for disposable Ubuntu cloud workstations.
+Vendor-agnostic bootstrap for Ubuntu cloud workstations and the persistent sync node.
 
-The target is any fresh Ubuntu 22.04 or 24.04 VM from any provider. Create the VM however you prefer, pass only Infisical bootstrap credentials, and run one command. The bootstrap handles secrets, networking, GUI access, workspace restore, and backups.
+The target is any fresh Ubuntu 22.04 or 24.04 VM from any provider. The bootstrap fetches secrets from Infisical, joins Tailscale, configures a workstation user, optionally installs XFCE/NoMachine, syncs `/workspace` with Syncthing, and mounts Google Drive at `/drive` with rclone.
 
 ## Stack
 
@@ -10,11 +10,41 @@ The target is any fresh Ubuntu 22.04 or 24.04 VM from any provider. Create the V
 |---|---|
 | Infisical | Secrets source of truth |
 | Tailscale | Stable private networking and SSH |
+| Syncthing | Smooth machine-to-machine `/workspace` sync |
+| rclone | Google Drive mount at `/drive` |
 | XFCE | Lightweight desktop environment for server images |
 | NoMachine | Remote GUI desktop on port `4000` |
-| Restic | Encrypted `/workspace` snapshots |
-| Cloudflare R2 | S3-compatible object storage backend |
-| systemd | Periodic and shutdown backups |
+| systemd | Syncthing and rclone service management |
+
+## Storage Model
+
+Use `/workspace` for active development:
+
+```text
+/workspace
+```
+
+This is a normal local filesystem, so Docker builds, git, package installs, file watchers, and editors behave normally. Syncthing keeps it synchronized with your persistent VPS and other workstations.
+
+Use `/drive` for Google Drive files:
+
+```text
+/drive
+```
+
+This is an rclone mount of Google Drive. Use it for datasets, model weights, checkpoints, exports, archives, and files you want to browse from phone, tablet, desktop, or web. Do not use `/drive` as an active build/database/package-install directory.
+
+Recommended topology:
+
+```text
+Persistent VPS
+  /workspace  Syncthing canonical peer
+  /drive      Google Drive mount
+
+Disposable workstation
+  /workspace  local disk + Syncthing peer
+  /drive      Google Drive mount
+```
 
 ## Bootstrap
 
@@ -29,6 +59,8 @@ Then run:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oguzkaganozt/infra/main/workstation/bootstrap.sh | sudo -E bash
 ```
+
+If the provider supports cloud-init, use `workstation/cloud-init.example.yml` as the starting user-data template instead of the manual curl command.
 
 Optional bootstrap variables:
 
@@ -52,35 +84,58 @@ export INFISICAL_ENV='prod'
 
 Create one Infisical project, for example `workstation`, with a `prod` environment. Add a read-only service token scoped to `prod:/` for the simplest one-variable bootstrap.
 
-If you prefer machine identities, add a Universal Auth machine identity to the project and give it access to read the environment secrets.
-
-Store only these required secrets in Infisical:
+Store these required secrets in Infisical:
 
 ```bash
 TS_AUTHKEY='<tailscale-auth-key>'
-RESTIC_PASSWORD='<restic-encryption-password>'
-AWS_ACCESS_KEY_ID='<r2-access-key-id>'
-AWS_SECRET_ACCESS_KEY='<r2-secret-access-key>'
+RCLONE_CONFIG_B64='<base64-encoded-rclone.conf>'
+RCLONE_REMOTE='gdrive'
+WORKSTATION_PASSWORD='<strong-nomachine-password>'
+```
+
+Create `RCLONE_CONFIG_B64` from a working rclone Google Drive config:
+
+```bash
+base64 -w0 ~/.config/rclone/rclone.conf
 ```
 
 Everything else has code defaults:
 
 | Setting | Default |
 |---|---|
+| `WORKSTATION_ROLE` | `workstation` |
 | `WORKSPACE_DIR` | `/workspace` |
-| `RESTIC_TAG` | `workspace` |
-| `RESTIC_REPOSITORY` | `s3:https://c7a7c7c9096e7a8fc974cec9ded52671.r2.cloudflarestorage.com/vast-workspace/main` |
+| `DRIVE_DIR` | `/drive` |
+| `SYNCTHING_FOLDER_ID` | `workspace` |
+| `SYNCTHING_FOLDER_LABEL` | `workspace` |
+| `SYNCTHING_PEER_ADDRESS` | `dynamic` |
+| `WORKSPACE_CHOWN_RECURSIVE` | `0` |
 | `WORKSTATION_USER` | `workstation` |
-| `WORKSTATION_PASSWORD` | `password` |
+| `RCLONE_REMOTE` | `gdrive` |
+| `RCLONE_REMOTE_PATH` | empty, mount the whole remote |
+| `RCLONE_VFS_CACHE_MAX_SIZE` | `50G` |
+| `RCLONE_VFS_CACHE_MAX_AGE` | `24h` |
 | `NOMACHINE_DEB_URL` | `https://www.nomachine.com/free/linux/64/deb` |
 | `INSTALL_DESKTOP` | `1` |
 | `DESKTOP_PACKAGES` | `xfce4 xfce4-goodies dbus-x11 x11-xserver-utils` |
 | `INSTALL_NOMACHINE` | `1` |
-| `INSTALL_SYSTEMD_TIMER` | `1` |
-| `INSTALL_UFW` | `0` |
 | `TS_ENABLE_SSH` | `1` |
 
-Optional Infisical overrides are fine, but not required. The most useful optional one is `TS_HOSTNAME`, for example `gpu-workstation`.
+For the persistent VPS, set:
+
+```bash
+WORKSTATION_ROLE='sync-node'
+```
+
+`sync-node` skips desktop and NoMachine by default. Set `INSTALL_DESKTOP=1` or `INSTALL_NOMACHINE=1` only if you intentionally want GUI access on the VPS.
+
+For each disposable workstation, set `SYNCTHING_PEER_DEVICE_IDS` to the VPS Syncthing device ID after bootstrapping the VPS. Run this on the VPS to get it:
+
+```bash
+workstation-sync-info
+```
+
+You can also set `SYNCTHING_PEER_DEVICE_IDS` on the VPS to a comma-separated list of workstation device IDs for fully automatic pairing, or add workstations from the Syncthing web UI over a Tailscale SSH tunnel.
 
 For GitHub access, add one optional secret:
 
@@ -99,6 +154,7 @@ Use Tailscale endpoints instead of provider public IPs or random port mappings:
 ```text
 SSH: ssh <workstation-user>@<tailscale-hostname-or-ip>
 NoMachine: <tailscale-hostname-or-ip>:4000
+Syncthing GUI: ssh -L 8384:127.0.0.1:8384 <workstation-user>@<tailscale-hostname-or-ip>
 Jupyter: http://<tailscale-hostname-or-ip>:8888
 Gradio: http://<tailscale-hostname-or-ip>:7860
 Dev server: http://<tailscale-hostname-or-ip>:3000
@@ -106,43 +162,28 @@ FastAPI: http://<tailscale-hostname-or-ip>:8000
 Web app: http://<tailscale-hostname-or-ip>:8080
 ```
 
-Run this on the VM for current connection and backup details:
+Run this on the VM for current connection, sync, and drive details:
 
 ```bash
 workstation-info
+workstation-sync-info
+workstation-drive-info
 ```
-
-## Persistence
-
-Only `WORKSPACE_DIR` is backed up and restored. The default is:
-
-```text
-/workspace
-```
-
-Backups run every 15 minutes after the first boot delay:
-
-```text
-OnBootSec=5min
-OnUnitActiveSec=15min
-```
-
-A shutdown backup service also attempts a final best-effort backup during graceful shutdown.
-
-Manual commands:
-
-```bash
-workstation-backup-workspace
-workstation-restore-workspace
-workstation-github-auth
-systemctl status workspace-backup.timer
-```
-
-Run `sudo workstation-github-auth` after adding or rotating `GITHUB_TOKEN` in Infisical on an existing workstation.
 
 ## Notes
 
-- Treat the VM disk as disposable.
-- Keep long-running work under `/workspace`.
-- Use different `RESTIC_TAG` values if running multiple active workstations against the same Restic repository.
-- `INSTALL_UFW=1` is available as an optional host firewall layer. It is disabled by default because most providers already have security groups/firewalls and Tailscale ACLs.
+- Treat disposable workstation VM disks as replaceable.
+- Keep active code, git repos, and Docker build contexts under `/workspace`.
+- Keep large human-browsable files under `/drive`.
+- Do not run databases, package installs, or Docker build contexts directly on `/drive`.
+- Host firewall configuration is intentionally left to the provider firewall/security group and Tailscale ACLs. The bootstrap does not install or manage UFW.
+
+## Development and validation
+
+Run the repository validation script before changing bootstrap logic:
+
+```bash
+workstation/scripts/verify-source.sh
+```
+
+The script runs `bash -n`, `shellcheck`, `shfmt -d`, and source-tree systemd verification.

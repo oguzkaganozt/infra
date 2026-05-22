@@ -17,13 +17,10 @@ The target is any fresh Ubuntu 22.04 or 24.04 VM from any provider. Create the V
 
 ## Bootstrap
 
-Set only these on the VM or in the provider startup environment:
+Simplest path: create an Infisical service token scoped to `prod:/` with read access, then set only this on the VM or in the provider startup environment:
 
 ```bash
-export INFISICAL_CLIENT_ID='<machine-identity-client-id>'
-export INFISICAL_CLIENT_SECRET='<machine-identity-client-secret>'
-export INFISICAL_PROJECT_ID='<project-id>'
-export INFISICAL_ENV='prod'
+export INFISICAL_TOKEN='<infisical-service-token>'
 ```
 
 Then run:
@@ -41,9 +38,20 @@ export WORKSTATION_REPO_BRANCH='main'
 export WORKSTATION_REPO_DIR='/opt/workstation-infra'
 ```
 
+Machine identity auth is also supported if you prefer it over service tokens:
+
+```bash
+export INFISICAL_CLIENT_ID='<machine-identity-client-id>'
+export INFISICAL_CLIENT_SECRET='<machine-identity-client-secret>'
+export INFISICAL_PROJECT_ID='<project-id>'
+export INFISICAL_ENV='prod'
+```
+
 ## Infisical Secrets
 
-Create one Infisical project, for example `workstation`, with a `prod` environment. Add a Universal Auth machine identity to that project and give it access to read the environment secrets.
+Create one Infisical project, for example `workstation`, with a `prod` environment. Add a read-only service token scoped to `prod:/` for the simplest one-variable bootstrap.
+
+If you prefer machine identities, add a Universal Auth machine identity to the project and give it access to read the environment secrets.
 
 Store these secrets in Infisical:
 
@@ -69,7 +77,7 @@ INSTALL_SYSTEMD_TIMER='1'
 INSTALL_UFW='1'
 ```
 
-The provider only sees the Infisical machine identity credentials. Real workstation secrets are fetched at bootstrap and written root-only to `/etc/workstation.env`.
+The provider only sees the Infisical bootstrap token or machine identity credentials. Real workstation secrets are fetched at bootstrap and written root-only to `/etc/workstation.env`.
 
 ## Access
 

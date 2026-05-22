@@ -82,6 +82,14 @@ Everything else has code defaults:
 
 Optional Infisical overrides are fine, but not required. The most useful optional one is `TS_HOSTNAME`, for example `gpu-workstation`.
 
+For GitHub access, add one optional secret:
+
+```bash
+GITHUB_TOKEN='<fine-grained-github-token>'
+```
+
+When present, bootstrap logs in with `gh auth login --with-token` as `WORKSTATION_USER` and runs `gh auth setup-git`, so HTTPS `git clone`, `git pull`, and `git push` work through GitHub CLI credentials.
+
 The provider only sees the Infisical bootstrap token or machine identity credentials. Real workstation secrets are fetched at bootstrap and written root-only to `/etc/workstation.env`.
 
 ## Access

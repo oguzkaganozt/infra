@@ -43,11 +43,7 @@ install_nomachine() {
   systemctl enable --now nxserver.service || true
 }
 
-configure_nomachine_user() {
-  if [[ "${INSTALL_NOMACHINE:-1}" != "1" ]]; then
-    return
-  fi
-
+configure_workstation_user() {
   local user_name="${WORKSTATION_USER:-workstation}"
   local user_password="${WORKSTATION_PASSWORD:-password}"
 

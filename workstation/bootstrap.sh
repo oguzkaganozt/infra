@@ -66,6 +66,8 @@ source "$script_dir/modules/desktop.sh"
 # shellcheck disable=SC1091
 source "$script_dir/modules/nomachine.sh"
 # shellcheck disable=SC1091
+source "$script_dir/modules/github.sh"
+# shellcheck disable=SC1091
 source "$script_dir/modules/restic.sh"
 # shellcheck disable=SC1091
 source "$script_dir/modules/systemd.sh"
@@ -79,9 +81,10 @@ main() {
   install_tailscale
   configure_tailscale
   configure_firewall
+  configure_workstation_user
   install_desktop
   install_nomachine
-  configure_nomachine_user
+  configure_github_access
   install_helper_scripts "$script_dir/scripts"
   restore_workspace
   install_backup_timer "$script_dir/systemd"

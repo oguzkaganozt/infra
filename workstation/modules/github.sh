@@ -25,13 +25,5 @@ configure_github_access() {
   install_github_cli
 
   log "Configuring GitHub CLI and git HTTPS access for $user_name"
-  sudo -H -u "$user_name" env GITHUB_TOKEN="$GITHUB_TOKEN" bash -c '
-    set -euo pipefail
-    if ! gh auth status --hostname github.com >/dev/null 2>&1; then
-      printf "%s\n" "$GITHUB_TOKEN" | gh auth login --hostname github.com --with-token
-    fi
-    gh auth setup-git --hostname github.com
-    chmod 700 "$HOME/.config/gh" 2>/dev/null || true
-    chmod 600 "$HOME/.config/gh/hosts.yml" 2>/dev/null || true
-  '
+  /usr/local/bin/workstation-github-auth
 }

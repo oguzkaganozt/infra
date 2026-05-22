@@ -82,10 +82,10 @@ main() {
   configure_tailscale
   configure_firewall
   configure_workstation_user
+  install_helper_scripts "$script_dir/scripts"
+  configure_github_access
   install_desktop
   install_nomachine
-  configure_github_access
-  install_helper_scripts "$script_dir/scripts"
   restore_workspace
   install_backup_timer "$script_dir/systemd"
   log "Bootstrap complete"

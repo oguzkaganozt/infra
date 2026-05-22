@@ -27,6 +27,7 @@ install_helper_scripts() {
   log "Installing helper scripts"
   install -m 0755 "$source_dir/workstation-restore-workspace.sh" /usr/local/bin/workstation-restore-workspace
   install -m 0755 "$source_dir/workstation-backup-workspace.sh" /usr/local/bin/workstation-backup-workspace
+  install -m 0755 "$source_dir/workstation-github-auth.sh" /usr/local/bin/workstation-github-auth
   install -m 0755 "$source_dir/workstation-info.sh" /usr/local/bin/workstation-info
 
   rm -f /usr/local/bin/restore-workspace /usr/local/bin/backup-workspace

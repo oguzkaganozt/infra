@@ -134,8 +134,11 @@ Manual commands:
 ```bash
 workstation-backup-workspace
 workstation-restore-workspace
+workstation-github-auth
 systemctl status workspace-backup.timer
 ```
+
+Run `sudo workstation-github-auth` after adding or rotating `GITHUB_TOKEN` in Infisical on an existing workstation.
 
 ## Notes
 

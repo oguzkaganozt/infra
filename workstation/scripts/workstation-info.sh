@@ -8,7 +8,7 @@ if [[ -f /etc/environment ]]; then
   source /etc/environment
   set +a
 fi
-if [[ -f "$ENV_FILE" ]]; then
+if [[ -r "$ENV_FILE" ]]; then
   set -a
   # shellcheck disable=SC1090
   source "$ENV_FILE"
@@ -19,7 +19,14 @@ WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
 RESTIC_TAG="${RESTIC_TAG:-workspace}"
 RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-s3:https://c7a7c7c9096e7a8fc974cec9ded52671.r2.cloudflarestorage.com/vast-workspace/main}"
 AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
-WORKSTATION_USER="${WORKSTATION_USER:-workstation}"
+if [[ -z "${WORKSTATION_USER:-}" ]]; then
+  current_user="$(id -un 2>/dev/null || true)"
+  if [[ -n "$current_user" && "$current_user" != "root" && "$current_user" != "ubuntu" ]]; then
+    WORKSTATION_USER="$current_user"
+  else
+    WORKSTATION_USER="workstation"
+  fi
+fi
 export RESTIC_REPOSITORY AWS_DEFAULT_REGION
 
 tailscale_ip() {

@@ -89,7 +89,13 @@ main() {
   restore_workspace
   install_backup_timer "$script_dir/systemd"
   log "Bootstrap complete"
-  log "Run workstation-info for connection details"
+  local user_name="${WORKSTATION_USER:-workstation}"
+  log "Switch to workstation user with: sudo -iu $user_name"
+  if id "$user_name" >/dev/null 2>&1; then
+    sudo -H -u "$user_name" /usr/local/bin/workstation-info || true
+  else
+    /usr/local/bin/workstation-info || true
+  fi
 }
 
 main "$@"

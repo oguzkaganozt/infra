@@ -31,12 +31,14 @@ if ! command -v gh >/dev/null 2>&1; then
   apt-get -o DPkg::Lock::Timeout=600 install -y gh
 fi
 
-sudo -H -u "$WORKSTATION_USER" env GITHUB_TOKEN="$GITHUB_TOKEN" bash -c '
+sudo -H -u "$WORKSTATION_USER" env WORKSTATION_GITHUB_TOKEN="$GITHUB_TOKEN" bash -c '
   set -euo pipefail
+  unset GITHUB_TOKEN GH_TOKEN
   if ! gh auth status --hostname github.com >/dev/null 2>&1; then
-    printf "%s\n" "$GITHUB_TOKEN" | gh auth login --hostname github.com --with-token
+    printf "%s\n" "$WORKSTATION_GITHUB_TOKEN" | gh auth login --hostname github.com --with-token
   fi
   gh auth setup-git --hostname github.com
+  unset WORKSTATION_GITHUB_TOKEN
   chmod 700 "$HOME/.config/gh" 2>/dev/null || true
   chmod 600 "$HOME/.config/gh/hosts.yml" 2>/dev/null || true
   gh auth status --hostname github.com

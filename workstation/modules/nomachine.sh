@@ -48,13 +48,14 @@ configure_nomachine_user() {
     return
   fi
 
-  local user_name="${NOMACHINE_USER:-workstation}"
+  local user_name="${WORKSTATION_USER:-workstation}"
+  local user_password="${WORKSTATION_PASSWORD:-password}"
 
   if ! id "$user_name" >/dev/null 2>&1; then
     log "Creating workstation user: $user_name"
     useradd --create-home --shell /bin/bash --groups sudo "$user_name"
   fi
 
-  log "Configuring NoMachine login user: $user_name"
-  printf '%s:%s\n' "$user_name" "${NOMACHINE_PASSWORD:-password}" | chpasswd
+  log "Configuring workstation login user: $user_name"
+  printf '%s:%s\n' "$user_name" "$user_password" | chpasswd
 }

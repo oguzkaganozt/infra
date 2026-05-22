@@ -6,8 +6,9 @@ workspace_owner() {
     return
   fi
 
-  if [[ -n "${NOMACHINE_USER:-}" ]] && id "$NOMACHINE_USER" >/dev/null 2>&1; then
-    printf '%s:%s' "$NOMACHINE_USER" "$NOMACHINE_USER"
+  local user_name="${WORKSTATION_USER:-workstation}"
+  if id "$user_name" >/dev/null 2>&1; then
+    printf '%s:%s' "$user_name" "$user_name"
     return
   fi
 

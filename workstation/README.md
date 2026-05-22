@@ -70,8 +70,8 @@ Everything else has code defaults:
 | `WORKSPACE_DIR` | `/workspace` |
 | `RESTIC_TAG` | `workspace` |
 | `RESTIC_REPOSITORY` | `s3:https://c7a7c7c9096e7a8fc974cec9ded52671.r2.cloudflarestorage.com/vast-workspace/main` |
-| `NOMACHINE_USER` | `workstation` |
-| `NOMACHINE_PASSWORD` | `password` |
+| `WORKSTATION_USER` | `workstation` |
+| `WORKSTATION_PASSWORD` | `password` |
 | `NOMACHINE_DEB_URL` | `https://www.nomachine.com/free/linux/64/deb` |
 | `INSTALL_DESKTOP` | `1` |
 | `DESKTOP_PACKAGES` | `xfce4 xfce4-goodies dbus-x11 x11-xserver-utils` |
@@ -89,7 +89,7 @@ The provider only sees the Infisical bootstrap token or machine identity credent
 Use Tailscale endpoints instead of provider public IPs or random port mappings:
 
 ```text
-SSH: ssh workstation@<tailscale-hostname-or-ip>
+SSH: ssh <workstation-user>@<tailscale-hostname-or-ip>
 NoMachine: <tailscale-hostname-or-ip>:4000
 Jupyter: http://<tailscale-hostname-or-ip>:8888
 Gradio: http://<tailscale-hostname-or-ip>:7860

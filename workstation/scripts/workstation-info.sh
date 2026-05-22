@@ -19,7 +19,7 @@ WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
 RESTIC_TAG="${RESTIC_TAG:-workspace}"
 RESTIC_REPOSITORY="${RESTIC_REPOSITORY:-s3:https://c7a7c7c9096e7a8fc974cec9ded52671.r2.cloudflarestorage.com/vast-workspace/main}"
 AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
-NOMACHINE_USER="${NOMACHINE_USER:-workstation}"
+WORKSTATION_USER="${WORKSTATION_USER:-workstation}"
 export RESTIC_REPOSITORY AWS_DEFAULT_REGION
 
 tailscale_ip() {
@@ -64,7 +64,7 @@ fi
 
 printf '\nEndpoints\n'
 if [[ -n "$endpoint_host" ]]; then
-  printf '  SSH: ssh %s@%s\n' "$NOMACHINE_USER" "$endpoint_host"
+  printf '  SSH: ssh %s@%s\n' "$WORKSTATION_USER" "$endpoint_host"
   printf '  NoMachine: %s:4000\n' "$endpoint_host"
   printf '  Jupyter: http://%s:8888\n' "$endpoint_host"
   printf '  Gradio: http://%s:7860\n' "$endpoint_host"

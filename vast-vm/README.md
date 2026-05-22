@@ -8,6 +8,7 @@ The current setup targets Vast.ai true VM instances:
 - Restore `/workspace` from a Restic repository on S3-compatible storage.
 - Back up `/workspace` periodically with systemd.
 - Attempt a final backup during shutdown.
+- Install NoMachine for remote desktop access.
 
 ## Layout
 
@@ -54,6 +55,10 @@ RESTIC_TAG='workspace'
 PROJECT_REPO_URL='git@github.com:org/project.git'
 PROJECT_DIR='/workspace/project'
 INSTALL_SYSTEMD_TIMER='1'
+INSTALL_NOMACHINE='1'
+NOMACHINE_DEB_URL='https://www.nomachine.com/free/linux/64/deb'
+NOMACHINE_USER='user'
+NOMACHINE_PASSWORD='<gui-login-password>'
 ```
 
 ## Vast.ai Onstart Command
@@ -111,6 +116,26 @@ backup-workspace
 restore-workspace
 systemctl status workspace-backup.timer
 ```
+
+## NoMachine Access
+
+Vast maps exposed VM ports to host ports. The internal NoMachine port is `4000`, but the public port is usually assigned dynamically, so direct `PUBLIC_IP:4000` normally will not work.
+
+Find the current mapping with:
+
+```bash
+vastai show instance <instance-id> --raw
+```
+
+Look for `ports["4000/tcp"][0].HostPort`, then connect from the NoMachine client to:
+
+```text
+<public_ipaddr>:<host_port_for_4000>
+```
+
+For example, if Vast reports public IP `92.180.27.83` and maps `4000/tcp` to host port `54191`, connect NoMachine to `92.180.27.83:54191`.
+
+NoMachine uses normal Linux credentials. Set `NOMACHINE_PASSWORD` as a secret Vast environment variable to configure the login password for `NOMACHINE_USER` during bootstrap.
 
 ## Notes
 

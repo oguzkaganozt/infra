@@ -7,6 +7,10 @@ WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
 WORKSPACE_OWNER="${WORKSPACE_OWNER:-root:root}"
 RESTIC_TAG="${RESTIC_TAG:-workspace}"
 INSTALL_SYSTEMD_TIMER="${INSTALL_SYSTEMD_TIMER:-1}"
+INSTALL_NOMACHINE="${INSTALL_NOMACHINE:-1}"
+NOMACHINE_DEB_URL="${NOMACHINE_DEB_URL:-https://www.nomachine.com/free/linux/64/deb}"
+NOMACHINE_USER="${NOMACHINE_USER:-user}"
+NOMACHINE_PASSWORD="${NOMACHINE_PASSWORD:-}"
 PROJECT_REPO_URL="${PROJECT_REPO_URL:-}"
 PROJECT_DIR="${PROJECT_DIR:-$WORKSPACE_DIR/project}"
 
@@ -26,6 +30,42 @@ install_packages() {
   wait_for_apt_locks
   apt-get update
   apt-get install -y ca-certificates curl git restic systemd
+}
+
+install_nomachine() {
+  if [[ "$INSTALL_NOMACHINE" != "1" ]]; then
+    log "Skipping NoMachine install"
+    return
+  fi
+
+  if command -v /usr/NX/bin/nxserver >/dev/null 2>&1; then
+    log "NoMachine is already installed"
+    return
+  fi
+
+  log "Installing NoMachine"
+  local deb_path=/tmp/nomachine.deb
+  curl -fsSL "$NOMACHINE_DEB_URL" -o "$deb_path"
+  dpkg-deb --info "$deb_path" >/dev/null
+  apt-get install -y "$deb_path"
+  rm -f "$deb_path"
+
+  if systemctl list-unit-files nxserver.service >/dev/null 2>&1; then
+    systemctl enable --now nxserver.service
+  fi
+}
+
+configure_nomachine_user() {
+  if [[ "$INSTALL_NOMACHINE" != "1" || -z "$NOMACHINE_PASSWORD" ]]; then
+    return
+  fi
+
+  log "Configuring NoMachine login user: $NOMACHINE_USER"
+  if ! id "$NOMACHINE_USER" >/dev/null 2>&1; then
+    useradd --create-home --shell /bin/bash "$NOMACHINE_USER"
+  fi
+
+  printf '%s:%s\n' "$NOMACHINE_USER" "$NOMACHINE_PASSWORD" | chpasswd
 }
 
 wait_for_apt_locks() {
@@ -137,6 +177,8 @@ clone_project() {
 main() {
   require_root
   install_packages
+  install_nomachine
+  configure_nomachine_user
   write_restic_env
   install_infra_scripts
   restore_workspace

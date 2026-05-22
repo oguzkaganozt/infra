@@ -78,7 +78,7 @@ Everything else has code defaults:
 | `DESKTOP_PACKAGES` | `xfce4 xfce4-goodies dbus-x11 x11-xserver-utils` |
 | `INSTALL_NOMACHINE` | `1` |
 | `INSTALL_SYSTEMD_TIMER` | `1` |
-| `INSTALL_UFW` | `1` |
+| `INSTALL_UFW` | `0` |
 | `TS_ENABLE_SSH` | `1` |
 
 Optional Infisical overrides are fine, but not required. The most useful optional one is `TS_HOSTNAME`, for example `gpu-workstation`.
@@ -135,4 +135,4 @@ systemctl status workspace-backup.timer
 - Treat the VM disk as disposable.
 - Keep long-running work under `/workspace`.
 - Use different `RESTIC_TAG` values if running multiple active workstations against the same Restic repository.
-- `INSTALL_UFW=1` allows SSH and all traffic on `tailscale0`, but keeps NoMachine and dev ports private to Tailscale by default.
+- `INSTALL_UFW=1` is available as an optional host firewall layer. It is disabled by default because most providers already have security groups/firewalls and Tailscale ACLs.

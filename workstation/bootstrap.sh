@@ -210,6 +210,37 @@ apply_cli_overrides() {
 	done
 }
 
+persist_cli_overrides() {
+	[[ -n "${WORKSTATION_CLI_OVERRIDE_KEYS:-}" ]] || return 0
+	local env_file="${WORKSTATION_ENV_FILE:-/etc/workstation.env}"
+	local tmp_file key storage_key line
+
+	tmp_file="$(mktemp)"
+	if [[ -f "$env_file" ]]; then
+		while IFS= read -r line || [[ -n "$line" ]]; do
+			local keep_line=1
+			for key in ${WORKSTATION_CLI_OVERRIDE_KEYS:-}; do
+				workstation_env_key_allowed "$key" || continue
+				if [[ "$line" =~ ^[[:space:]]*(export[[:space:]]+)?${key}= ]]; then
+					keep_line=0
+					break
+				fi
+			done
+			[[ "$keep_line" == "1" ]] && printf '%s\n' "$line"
+		done <"$env_file" >"$tmp_file"
+	fi
+
+	for key in ${WORKSTATION_CLI_OVERRIDE_KEYS:-}; do
+		workstation_env_key_allowed "$key" || continue
+		storage_key="WORKSTATION_CLI_$key"
+		[[ -v "$storage_key" ]] || continue
+		printf '%s=%q\n' "$key" "${!storage_key}" >>"$tmp_file"
+	done
+
+	install -m 0600 "$tmp_file" "$env_file"
+	rm -f "$tmp_file"
+}
+
 require_root_bootstrap() {
 	if [[ "${EUID}" -ne 0 ]]; then
 		bootstrap_log "Run as root, for example: curl ... | sudo -E bash"
@@ -284,6 +315,7 @@ main() {
 	fetch_infisical_env
 	load_workstation_env
 	apply_cli_overrides
+	persist_cli_overrides
 	set_workstation_defaults
 	install_tailscale
 	configure_tailscale

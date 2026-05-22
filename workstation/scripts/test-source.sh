@@ -92,6 +92,7 @@ EOF
 }
 
 test_bootstrap_cli_overrides() {
+	# shellcheck disable=SC2030
 	(
 		set -euo pipefail
 		export WORKSTATION_BOOTSTRAP_TEST_SOURCE=1
@@ -151,8 +152,46 @@ test_bootstrap_reexec_does_not_reparse_args() {
 	'
 }
 
+test_tailscale_preserves_connected_node() {
+	local bin_dir="$tmp_dir/bin"
+	local calls_file="$tmp_dir/tailscale-calls"
+	mkdir -p "$bin_dir"
+	cat >"$bin_dir/tailscale" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$TAILSCALE_CALLS_FILE"
+if [[ "$1" == "ip" ]]; then
+	printf '100.64.0.1\n'
+	exit 0
+fi
+if [[ "$1" == "up" ]]; then
+	exit 1
+fi
+EOF
+	chmod 0755 "$bin_dir/tailscale"
+
+	(
+		set -euo pipefail
+		export PATH="$bin_dir:$PATH"
+		export TAILSCALE_CALLS_FILE="$calls_file"
+		export TS_AUTHKEY=test-auth-key
+		# shellcheck disable=SC1091
+		source workstation/modules/common.sh
+		# shellcheck disable=SC1091
+		source workstation/lib/env.sh
+		# shellcheck disable=SC1091
+		source workstation/modules/tailscale.sh
+		configure_tailscale >/dev/null
+	)
+
+	grep -q '^ip -4$' "$calls_file" || fail 'connected Tailscale state was not checked'
+	if grep -q '^up ' "$calls_file"; then
+		fail 'bootstrap tried to run tailscale up on an already connected node'
+	fi
+}
+
 test_env_loading_and_defaults
 test_cached_env_requires_explicit_flag
 test_rclone_config_b64_cleanup
 test_bootstrap_cli_overrides
 test_bootstrap_reexec_does_not_reparse_args
+test_tailscale_preserves_connected_node

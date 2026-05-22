@@ -12,18 +12,18 @@ install_tailscale() {
 }
 
 configure_tailscale() {
+	if tailscale ip -4 >/dev/null 2>&1; then
+		log "Tailscale is already connected; preserving existing settings"
+		return
+	fi
+
 	if [[ -z "${TS_AUTHKEY:-}" ]]; then
 		log "TS_AUTHKEY is missing; skipping Tailscale login"
 		return
 	fi
 
-	local args=()
-	if tailscale ip -4 >/dev/null 2>&1; then
-		log "Reconciling Tailscale settings"
-	else
-		log "Connecting Tailscale"
-		args+=(--authkey "$TS_AUTHKEY")
-	fi
+	log "Connecting Tailscale"
+	local args=(--authkey "$TS_AUTHKEY")
 
 	if [[ -n "${TS_HOSTNAME:-}" ]]; then
 		args+=(--hostname "$TS_HOSTNAME")

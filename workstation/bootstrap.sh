@@ -62,6 +62,8 @@ source "$script_dir/modules/tailscale.sh"
 # shellcheck disable=SC1091
 source "$script_dir/modules/firewall.sh"
 # shellcheck disable=SC1091
+source "$script_dir/modules/desktop.sh"
+# shellcheck disable=SC1091
 source "$script_dir/modules/nomachine.sh"
 # shellcheck disable=SC1091
 source "$script_dir/modules/restic.sh"
@@ -77,6 +79,7 @@ main() {
   install_tailscale
   configure_tailscale
   configure_firewall
+  install_desktop
   install_nomachine
   configure_nomachine_user
   install_helper_scripts "$script_dir/scripts"

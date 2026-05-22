@@ -10,6 +10,7 @@ The target is any fresh Ubuntu 22.04 or 24.04 VM from any provider. Create the V
 |---|---|
 | Infisical | Secrets source of truth |
 | Tailscale | Stable private networking and SSH |
+| XFCE | Lightweight desktop environment for server images |
 | NoMachine | Remote GUI desktop on port `4000` |
 | Restic | Encrypted `/workspace` snapshots |
 | Cloudflare R2 | S3-compatible object storage backend |
@@ -64,6 +65,8 @@ NOMACHINE_USER='workstation'
 NOMACHINE_PASSWORD='password'
 INSTALL_NOMACHINE='1'
 NOMACHINE_DEB_URL='https://www.nomachine.com/free/linux/64/deb'
+INSTALL_DESKTOP='1'
+DESKTOP_PACKAGES='xfce4 xfce4-goodies dbus-x11 x11-xserver-utils'
 
 RESTIC_REPOSITORY='s3:https://<cloudflare-account-id>.r2.cloudflarestorage.com/<bucket>/main'
 RESTIC_PASSWORD='<restic-encryption-password>'

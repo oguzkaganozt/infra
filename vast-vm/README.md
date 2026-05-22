@@ -73,18 +73,34 @@ A private Vast.ai template has been created for this setup:
 ```text
 Name: vast-vm-workspace
 Template ID: 431096
-Template hash: c8ae2821c1dd50be229d7d8be03ec05e
+Template hash: 98300bae2e6f0f6de9ccf001fbd0b7d6
 Image: docker.io/vastai/kvm:ubuntu_desktop_22.04-2025-11-21
 Disk: 100 GB recommended
-Filters: vms_enabled=true
+Filters: vms_enabled=true direct_port_count>=10
+Ports: 22, 8888, 7860, 3000, 4000, 8000, 8080, 5901, 6080, 3389
 ```
 
 To launch from CLI, search for a VM-capable offer and create an instance with the template hash:
 
 ```bash
 vastai search offers 'vms_enabled=true verified=true rentable=true rented=false'
-vastai create instance <offer-id> --template_hash c8ae2821c1dd50be229d7d8be03ec05e --disk 100
+vastai create instance <offer-id> --template_hash 98300bae2e6f0f6de9ccf001fbd0b7d6 --disk 100
 ```
+
+Exposed ports:
+
+| Port | Use |
+|---:|---|
+| `22` | SSH |
+| `8888` | Jupyter |
+| `7860` | Gradio |
+| `3000` | Node/dev server |
+| `4000` | NoMachine/NX |
+| `8000` | FastAPI/dev server |
+| `8080` | Web app/dev server |
+| `5901` | VNC |
+| `6080` | noVNC/browser VNC |
+| `3389` | RDP |
 
 ## Manual Commands
 

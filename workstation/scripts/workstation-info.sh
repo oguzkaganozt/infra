@@ -39,7 +39,7 @@ latest_snapshot() {
     return
   fi
 
-  restic snapshots --tag "$RESTIC_TAG" 2>/dev/null | awk '/^[0-9a-f]/ {line=$0} END {print line}'
+  restic snapshots --tag "$RESTIC_TAG" 2>/dev/null | awk '/^[0-9a-f]+[[:space:]]+[0-9]{4}-[0-9]{2}-[0-9]{2}/ {line=$0} END {print line}'
 }
 
 endpoint_host="${TS_HOSTNAME:-}"

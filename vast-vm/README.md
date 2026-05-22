@@ -27,12 +27,24 @@ systemd/
 Pass these as environment variables when provisioning the VM. Do not commit them.
 
 ```bash
-RESTIC_REPOSITORY='s3:https://<account-id>.r2.cloudflarestorage.com/<bucket>/<prefix>'
+RESTIC_REPOSITORY='s3:https://c7a7c7c9096e7a8fc974cec9ded52671.r2.cloudflarestorage.com/vast-workspace/main'
 RESTIC_PASSWORD='<strong-restic-password>'
 AWS_ACCESS_KEY_ID='<r2-access-key-id>'
 AWS_SECRET_ACCESS_KEY='<r2-secret-access-key>'
 AWS_DEFAULT_REGION='auto'
 ```
+
+The Cloudflare account ID is `c7a7c7c9096e7a8fc974cec9ded52671` and the R2 bucket is `vast-workspace`.
+
+Create the R2 access key in Cloudflare Dashboard:
+
+1. Go to R2 Object Storage.
+2. Open Account Details, then API Tokens.
+3. Create an Account API token or User API token.
+4. Use Object Read & Write permissions scoped to the `vast-workspace` bucket.
+5. Copy the Access Key ID and Secret Access Key immediately; the secret is only shown once.
+
+Use `vast-env.example` as the template for the Vast.ai environment variables.
 
 Optional variables:
 

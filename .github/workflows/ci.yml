@@ -9,9 +9,18 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      ACTIONLINT_VERSION: v1.7.7
     steps:
       - uses: actions/checkout@v4
       - name: Install validation tools
         run: sudo apt-get update && sudo apt-get install -y shellcheck shfmt cloud-init
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Install actionlint
+        run: |
+          go install "github.com/rhysd/actionlint/cmd/actionlint@${ACTIONLINT_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Verify source
         run: workstation/scripts/verify-source.sh

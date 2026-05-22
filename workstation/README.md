@@ -203,7 +203,7 @@ Run the repository validation script before changing bootstrap logic:
 workstation/scripts/verify-source.sh
 ```
 
-The script runs `bash -n`, config metadata drift checks, `shellcheck`, `shfmt -d`, source-tree systemd verification, and `cloud-init schema` for `workstation/cloud-init.example.yml` when the tools are available.
+The script runs `bash -n`, config metadata drift checks, lightweight Bash smoke tests, `shellcheck`, `shfmt -d`, `actionlint`, source-tree systemd verification, and `cloud-init schema` for `workstation/cloud-init.example.yml` when the tools are available.
 
 Use strict mode locally to fail instead of skipping missing tools:
 

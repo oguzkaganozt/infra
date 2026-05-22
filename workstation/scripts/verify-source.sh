@@ -70,6 +70,7 @@ validate_config_metadata() {
 
 bash -n workstation/bootstrap.sh workstation/modules/*.sh workstation/scripts/*.sh workstation/lib/*.sh
 validate_config_metadata
+workstation/scripts/test-source.sh
 
 if require_tool shellcheck; then
 	shellcheck workstation/bootstrap.sh workstation/modules/*.sh workstation/scripts/*.sh workstation/lib/*.sh
@@ -77,6 +78,10 @@ fi
 
 if require_tool shfmt; then
 	shfmt -d workstation/bootstrap.sh workstation/modules/*.sh workstation/scripts/*.sh workstation/lib/*.sh
+fi
+
+if require_tool actionlint; then
+	actionlint
 fi
 
 if require_tool systemd-analyze; then

@@ -73,8 +73,8 @@ A private Vast.ai template has been created for this setup:
 ```text
 Name: vast-vm-workspace
 Template ID: 431096
-Template hash: b67fcc6880f02346df1dd91d9e338e25
-Image: docker.io/vastai/kvm:ubuntu_terminal
+Template hash: c8ae2821c1dd50be229d7d8be03ec05e
+Image: docker.io/vastai/kvm:ubuntu_desktop_22.04-2025-11-21
 Disk: 100 GB recommended
 Filters: vms_enabled=true
 ```
@@ -83,7 +83,7 @@ To launch from CLI, search for a VM-capable offer and create an instance with th
 
 ```bash
 vastai search offers 'vms_enabled=true verified=true rentable=true rented=false'
-vastai create instance <offer-id> --template_hash b67fcc6880f02346df1dd91d9e338e25 --disk 100
+vastai create instance <offer-id> --template_hash c8ae2821c1dd50be229d7d8be03ec05e --disk 100
 ```
 
 ## Manual Commands

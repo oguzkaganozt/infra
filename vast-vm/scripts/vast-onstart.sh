@@ -23,8 +23,44 @@ require_root() {
 
 install_packages() {
   log "Installing base packages"
+  wait_for_apt_locks
   apt-get update
   apt-get install -y ca-certificates curl git restic systemd
+}
+
+wait_for_apt_locks() {
+  local lock
+  local waited=0
+  local timeout=600
+  local locks=(
+    /var/lib/dpkg/lock
+    /var/lib/dpkg/lock-frontend
+    /var/lib/apt/lists/lock
+    /var/cache/apt/archives/lock
+  )
+
+  while true; do
+    lock=""
+    for lock in "${locks[@]}"; do
+      if fuser "$lock" >/dev/null 2>&1; then
+        break
+      fi
+      lock=""
+    done
+
+    if [[ -z "$lock" ]]; then
+      return
+    fi
+
+    if (( waited >= timeout )); then
+      log "Timed out waiting for apt/dpkg locks"
+      return 1
+    fi
+
+    log "Waiting for apt/dpkg lock: $lock"
+    sleep 10
+    waited=$((waited + 10))
+  done
 }
 
 write_restic_env() {

@@ -18,6 +18,198 @@ bootstrap_log() {
 	printf '[workstation-bootstrap] %s\n' "$*"
 }
 
+print_usage() {
+	cat <<'EOF'
+Usage: bootstrap.sh [options]
+
+Options:
+  --role workstation|base        Machine role. Default: workstation.
+  --headless                     Disable desktop and NoMachine.
+  --gui                          Enable desktop and NoMachine.
+  --desktop | --no-desktop       Enable or disable desktop packages.
+  --nomachine | --no-nomachine   Enable or disable NoMachine.
+  --hostname NAME                Tailscale hostname.
+  --user NAME                    Workstation login user. Default: workstation.
+  --secret-path PATH             Infisical secret path. Default: /.
+  --infisical-api-url URL        Infisical API URL.
+  --infisical-env NAME           Infisical environment. Default: prod.
+  --branch NAME                  Repository branch. Default: main.
+  --repo-dir PATH                Repository checkout directory.
+  --repo-url URL                 Repository URL.
+  --allow-cached-env             Reuse /etc/workstation.env when Infisical credentials are missing.
+  --chown-workspace              Recursively chown an existing workspace directory.
+  --syncthing-peer DEVICE_ID     Add a Syncthing peer device ID. Repeatable.
+  --rclone-remote NAME           rclone remote name. Default: gdrive.
+  --drive-path PATH              Path within the rclone remote to mount.
+  --workspace-dir PATH           Local workspace directory. Default: /workspace.
+  --drive-dir PATH               Local drive mount directory. Default: /drive.
+  -h, --help                     Show this help.
+EOF
+}
+
+require_arg_value() {
+	local flag="$1"
+	local value="${2:-}"
+	if [[ -z "$value" || "$value" == --* ]]; then
+		bootstrap_log "$flag requires a value"
+		exit 1
+	fi
+}
+
+set_cli_override() {
+	local key="$1"
+	local value="$2"
+	local storage_key="WORKSTATION_CLI_$key"
+
+	printf -v "$key" '%s' "$value"
+	export "${key?}"
+	printf -v "$storage_key" '%s' "$value"
+	export "${storage_key?}"
+
+	case " ${WORKSTATION_CLI_OVERRIDE_KEYS:-} " in
+	*" $key "*) ;;
+	*) WORKSTATION_CLI_OVERRIDE_KEYS="${WORKSTATION_CLI_OVERRIDE_KEYS:-}${WORKSTATION_CLI_OVERRIDE_KEYS:+ }$key" ;;
+	esac
+	export WORKSTATION_CLI_OVERRIDE_KEYS
+}
+
+append_cli_csv_override() {
+	local key="$1"
+	local value="$2"
+	local current="${!key:-}"
+	if [[ -n "$current" ]]; then
+		set_cli_override "$key" "$current,$value"
+	else
+		set_cli_override "$key" "$value"
+	fi
+}
+
+parse_bootstrap_args() {
+	local arg value
+	while (($# > 0)); do
+		arg="$1"
+		case "$arg" in
+		-h | --help)
+			print_usage
+			exit 0
+			;;
+		--role)
+			require_arg_value "$arg" "${2:-}"
+			set_cli_override WORKSTATION_ROLE "$2"
+			shift 2
+			;;
+		--role=*)
+			value="${arg#*=}"
+			require_arg_value --role "$value"
+			set_cli_override WORKSTATION_ROLE "$value"
+			shift
+			;;
+		--headless)
+			set_cli_override INSTALL_DESKTOP 0
+			set_cli_override INSTALL_NOMACHINE 0
+			shift
+			;;
+		--gui)
+			set_cli_override INSTALL_DESKTOP 1
+			set_cli_override INSTALL_NOMACHINE 1
+			shift
+			;;
+		--desktop)
+			set_cli_override INSTALL_DESKTOP 1
+			shift
+			;;
+		--no-desktop)
+			set_cli_override INSTALL_DESKTOP 0
+			shift
+			;;
+		--nomachine)
+			set_cli_override INSTALL_NOMACHINE 1
+			shift
+			;;
+		--no-nomachine)
+			set_cli_override INSTALL_NOMACHINE 0
+			shift
+			;;
+		--allow-cached-env)
+			set_cli_override WORKSTATION_ALLOW_CACHED_ENV 1
+			shift
+			;;
+		--chown-workspace)
+			set_cli_override WORKSPACE_CHOWN_RECURSIVE 1
+			shift
+			;;
+		--hostname | --user | --secret-path | --infisical-api-url | --infisical-env | --branch | --repo-dir | --repo-url | --syncthing-peer | --rclone-remote | --drive-path | --workspace-dir | --drive-dir)
+			require_arg_value "$arg" "${2:-}"
+			value="$2"
+			case "$arg" in
+			--hostname) set_cli_override TS_HOSTNAME "$value" ;;
+			--user) set_cli_override WORKSTATION_USER "$value" ;;
+			--secret-path) set_cli_override INFISICAL_SECRET_PATH "$value" ;;
+			--infisical-api-url) set_cli_override INFISICAL_API_URL "$value" ;;
+			--infisical-env) set_cli_override INFISICAL_ENV "$value" ;;
+			--branch) set_cli_override WORKSTATION_REPO_BRANCH "$value" ;;
+			--repo-dir) set_cli_override WORKSTATION_REPO_DIR "$value" ;;
+			--repo-url) set_cli_override WORKSTATION_REPO_URL "$value" ;;
+			--syncthing-peer) append_cli_csv_override SYNCTHING_PEER_DEVICE_IDS "$value" ;;
+			--rclone-remote) set_cli_override RCLONE_REMOTE "$value" ;;
+			--drive-path) set_cli_override RCLONE_REMOTE_PATH "$value" ;;
+			--workspace-dir) set_cli_override WORKSPACE_DIR "$value" ;;
+			--drive-dir) set_cli_override DRIVE_DIR "$value" ;;
+			esac
+			shift 2
+			;;
+		--hostname=* | --user=* | --secret-path=* | --infisical-api-url=* | --infisical-env=* | --branch=* | --repo-dir=* | --repo-url=* | --syncthing-peer=* | --rclone-remote=* | --drive-path=* | --workspace-dir=* | --drive-dir=*)
+			value="${arg#*=}"
+			require_arg_value "${arg%%=*}" "$value"
+			case "${arg%%=*}" in
+			--hostname) set_cli_override TS_HOSTNAME "$value" ;;
+			--user) set_cli_override WORKSTATION_USER "$value" ;;
+			--secret-path) set_cli_override INFISICAL_SECRET_PATH "$value" ;;
+			--infisical-api-url) set_cli_override INFISICAL_API_URL "$value" ;;
+			--infisical-env) set_cli_override INFISICAL_ENV "$value" ;;
+			--branch) set_cli_override WORKSTATION_REPO_BRANCH "$value" ;;
+			--repo-dir) set_cli_override WORKSTATION_REPO_DIR "$value" ;;
+			--repo-url) set_cli_override WORKSTATION_REPO_URL "$value" ;;
+			--syncthing-peer) append_cli_csv_override SYNCTHING_PEER_DEVICE_IDS "$value" ;;
+			--rclone-remote) set_cli_override RCLONE_REMOTE "$value" ;;
+			--drive-path) set_cli_override RCLONE_REMOTE_PATH "$value" ;;
+			--workspace-dir) set_cli_override WORKSPACE_DIR "$value" ;;
+			--drive-dir) set_cli_override DRIVE_DIR "$value" ;;
+			esac
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			bootstrap_log "Unknown option: $arg"
+			bootstrap_log "Run with --help for usage."
+			exit 1
+			;;
+		esac
+	done
+
+	case "${WORKSTATION_ROLE:-}" in
+	"" | workstation | base) ;;
+	*)
+		bootstrap_log "--role must be workstation or base"
+		exit 1
+		;;
+	esac
+}
+
+apply_cli_overrides() {
+	local key storage_key
+	for key in ${WORKSTATION_CLI_OVERRIDE_KEYS:-}; do
+		storage_key="WORKSTATION_CLI_$key"
+		if [[ -v "$storage_key" ]]; then
+			printf -v "$key" '%s' "${!storage_key}"
+			export "${key?}"
+		fi
+	done
+}
+
 require_root_bootstrap() {
 	if [[ "${EUID}" -ne 0 ]]; then
 		bootstrap_log "Run as root, for example: curl ... | sudo -E bash"
@@ -50,6 +242,11 @@ ensure_repo_checkout() {
 
 	exec env WORKSTATION_BOOTSTRAP_REEXEC=1 bash "$WORKSTATION_REPO_DIR/workstation/bootstrap.sh" "$@"
 }
+
+if [[ "${WORKSTATION_BOOTSTRAP_ARGS_PARSED:-0}" != "1" ]]; then
+	parse_bootstrap_args "$@"
+	export WORKSTATION_BOOTSTRAP_ARGS_PARSED=1
+fi
 
 if [[ ! -f "$script_dir/modules/common.sh" ]]; then
 	ensure_repo_checkout "$@"
@@ -86,6 +283,7 @@ main() {
 	install_infisical_cli
 	fetch_infisical_env
 	load_workstation_env
+	apply_cli_overrides
 	set_workstation_defaults
 	install_tailscale
 	configure_tailscale
@@ -106,4 +304,6 @@ main() {
 	fi
 }
 
-main "$@"
+if [[ "${WORKSTATION_BOOTSTRAP_TEST_SOURCE:-0}" != "1" ]]; then
+	main "$@"
+fi

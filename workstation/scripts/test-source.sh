@@ -91,6 +91,68 @@ EOF
 	grep -q '^RCLONE_REMOTE=gdrive$' "$env_file" || fail 'rclone cleanup removed unrelated env key'
 }
 
+test_bootstrap_cli_overrides() {
+	(
+		set -euo pipefail
+		export WORKSTATION_BOOTSTRAP_TEST_SOURCE=1
+		# shellcheck disable=SC1091
+		source workstation/bootstrap.sh
+		parse_bootstrap_args \
+			--role base \
+			--headless \
+			--hostname workspace-vps \
+			--infisical-api-url https://infisical.example.com \
+			--secret-path /vps \
+			--branch test-branch \
+			--repo-dir /tmp/workstation-infra \
+			--allow-cached-env \
+			--chown-workspace \
+			--syncthing-peer peer-one \
+			--syncthing-peer peer-two \
+			--rclone-remote drive \
+			--drive-path datasets \
+			--workspace-dir /ws \
+			--drive-dir /mnt/drive
+
+		WORKSTATION_ROLE=workstation
+		INSTALL_DESKTOP=1
+		INSTALL_NOMACHINE=1
+		TS_HOSTNAME=wrong-hostname
+		SYNCTHING_PEER_DEVICE_IDS=wrong-peer
+		apply_cli_overrides
+
+		assert_eq base "$WORKSTATION_ROLE" 'CLI role overrides env file values'
+		assert_eq 0 "$INSTALL_DESKTOP" 'headless disables desktop'
+		assert_eq 0 "$INSTALL_NOMACHINE" 'headless disables NoMachine'
+		assert_eq workspace-vps "$TS_HOSTNAME" 'CLI hostname overrides env file values'
+		assert_eq https://infisical.example.com "$INFISICAL_API_URL" 'CLI Infisical API URL is applied'
+		assert_eq /vps "$INFISICAL_SECRET_PATH" 'CLI secret path is applied'
+		assert_eq test-branch "$WORKSTATION_REPO_BRANCH" 'CLI branch is applied'
+		assert_eq /tmp/workstation-infra "$WORKSTATION_REPO_DIR" 'CLI repo dir is applied'
+		assert_eq 1 "$WORKSTATION_ALLOW_CACHED_ENV" 'cached env flag is applied'
+		assert_eq 1 "$WORKSPACE_CHOWN_RECURSIVE" 'workspace chown flag is applied'
+		assert_eq peer-one,peer-two "$SYNCTHING_PEER_DEVICE_IDS" 'repeatable Syncthing peer flags append'
+		assert_eq drive "$RCLONE_REMOTE" 'CLI rclone remote is applied'
+		assert_eq datasets "$RCLONE_REMOTE_PATH" 'CLI drive path is applied'
+		assert_eq /ws "$WORKSPACE_DIR" 'CLI workspace dir is applied'
+		assert_eq /mnt/drive "$DRIVE_DIR" 'CLI drive dir is applied'
+	)
+}
+
+test_bootstrap_reexec_does_not_reparse_args() {
+	bash -c '
+		set -euo pipefail
+		export WORKSTATION_BOOTSTRAP_TEST_SOURCE=1
+		export WORKSTATION_BOOTSTRAP_ARGS_PARSED=1
+		export SYNCTHING_PEER_DEVICE_IDS=peer-one
+		# shellcheck disable=SC1091
+		source workstation/bootstrap.sh --syncthing-peer peer-two
+		[[ "$SYNCTHING_PEER_DEVICE_IDS" == peer-one ]]
+	'
+}
+
 test_env_loading_and_defaults
 test_cached_env_requires_explicit_flag
 test_rclone_config_b64_cleanup
+test_bootstrap_cli_overrides
+test_bootstrap_reexec_does_not_reparse_args

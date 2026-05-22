@@ -54,7 +54,7 @@ Simplest path: create an Infisical service token scoped to `prod:/` with read ac
 export INFISICAL_TOKEN='<infisical-service-token>'
 ```
 
-Then run:
+Then run a workstation with the opinionated defaults:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oguzkaganozt/infra/main/workstation/bootstrap.sh | sudo -E bash
@@ -62,22 +62,39 @@ curl -fsSL https://raw.githubusercontent.com/oguzkaganozt/infra/main/workstation
 
 If the provider supports cloud-init, use `workstation/cloud-init.example.yml` as the starting user-data template instead of the manual curl command.
 
-Optional bootstrap variables:
+Run the persistent sync VPS with flags instead of storing machine intent in Infisical:
 
 ```bash
-export INFISICAL_API_URL='https://app.infisical.com'
-export INFISICAL_SECRET_PATH='/'
-export WORKSTATION_REPO_BRANCH='main'
-export WORKSTATION_REPO_DIR='/opt/workstation-infra'
-# Only for intentional offline re-runs that reuse /etc/workstation.env.
-export WORKSTATION_ALLOW_CACHED_ENV='1'
+curl -fsSL https://raw.githubusercontent.com/oguzkaganozt/infra/main/workstation/bootstrap.sh | sudo -E bash -s -- --role base --hostname workspace-vps
+```
+
+Run a disposable workstation and pair it with the VPS Syncthing device ID:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oguzkaganozt/infra/main/workstation/bootstrap.sh | sudo -E bash -s -- --role workstation --hostname gpu-workstation --syncthing-peer '<vps-syncthing-device-id>'
+```
+
+Common bootstrap flags:
+
+```bash
+--role workstation|base
+--hostname NAME
+--headless
+--gui
+--secret-path /
+--infisical-env prod
+--branch main
+--repo-dir /opt/workstation-infra
+--allow-cached-env
+--syncthing-peer DEVICE_ID
+--rclone-remote gdrive
+--drive-path PATH
 ```
 
 For a cheaper headless workstation, skip the GUI packages:
 
 ```bash
-export INSTALL_DESKTOP='0'
-export INSTALL_NOMACHINE='0'
+curl -fsSL https://raw.githubusercontent.com/oguzkaganozt/infra/main/workstation/bootstrap.sh | sudo -E bash -s -- --headless
 ```
 
 Machine identity auth is also supported if you prefer it over service tokens:
@@ -93,12 +110,11 @@ export INFISICAL_ENV='prod'
 
 Create one Infisical project, for example `workstation`, with a `prod` environment. Add a read-only service token scoped to `prod:/` for the simplest one-variable bootstrap.
 
-Store these required secrets in Infisical:
+Store only the needed secrets in Infisical:
 
 ```bash
 TS_AUTHKEY='<tailscale-auth-key>'
 RCLONE_CONFIG_B64='<base64-encoded-rclone.conf>'
-RCLONE_REMOTE='gdrive'
 WORKSTATION_PASSWORD='<strong-nomachine-password>'
 ```
 
@@ -108,7 +124,7 @@ Create `RCLONE_CONFIG_B64` from a working rclone Google Drive config:
 base64 -w0 ~/.config/rclone/rclone.conf
 ```
 
-Everything else has code defaults. `workstation/lib/config.sh` is the source of truth for supported variables and defaults.
+Everything else has code defaults or bootstrap flags. `workstation/lib/config.sh` is the source of truth for supported variables and defaults.
 
 | Setting | Default |
 |---|---|
@@ -136,21 +152,21 @@ Everything else has code defaults. `workstation/lib/config.sh` is the source of 
 | `TS_ENABLE_SSH` | `1` |
 | `WORKSTATION_ALLOW_CACHED_ENV` | `0` |
 
-For the persistent VPS, set:
+For the persistent VPS, pass:
 
 ```bash
-WORKSTATION_ROLE='sync-node'
+--role base
 ```
 
-`sync-node` skips desktop and NoMachine by default. Set `INSTALL_DESKTOP=1` or `INSTALL_NOMACHINE=1` only if you intentionally want GUI access on the VPS.
+`base` skips desktop and NoMachine by default. Pass `--gui`, `--desktop`, or `--nomachine` only if you intentionally want GUI access on the VPS.
 
-For each disposable workstation, set `SYNCTHING_PEER_DEVICE_IDS` to the VPS Syncthing device ID after bootstrapping the VPS. Run this on the VPS to get it:
+For each disposable workstation, pass `--syncthing-peer` with the VPS Syncthing device ID after bootstrapping the VPS. Run this on the VPS to get it:
 
 ```bash
 workstation-sync-info
 ```
 
-You can also set `SYNCTHING_PEER_DEVICE_IDS` on the VPS to a comma-separated list of workstation device IDs for fully automatic pairing, or add workstations from the Syncthing web UI over a Tailscale SSH tunnel.
+You can also pass `--syncthing-peer` on the VPS with workstation device IDs for fully automatic pairing, or add workstations from the Syncthing web UI over a Tailscale SSH tunnel.
 
 For GitHub access, add one optional secret:
 

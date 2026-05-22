@@ -41,7 +41,7 @@ set_workstation_defaults() {
 	DRIVE_DIR="${DRIVE_DIR:-$(workstation_config_default DRIVE_DIR)}"
 	WORKSTATION_USER="${WORKSTATION_USER:-$(workstation_config_default WORKSTATION_USER)}"
 	WORKSTATION_ROLE="${WORKSTATION_ROLE:-$(workstation_config_default WORKSTATION_ROLE)}"
-	if [[ "$WORKSTATION_ROLE" == "sync-node" ]]; then
+	if [[ "$WORKSTATION_ROLE" == "base" ]]; then
 		INSTALL_DESKTOP="${INSTALL_DESKTOP:-0}"
 		INSTALL_NOMACHINE="${INSTALL_NOMACHINE:-0}"
 	else

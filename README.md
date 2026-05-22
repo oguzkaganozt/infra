@@ -6,6 +6,8 @@ Shared infrastructure code and operational scripts.
 
 | Directory | Purpose |
 |---|---|
-| `vast-vm/` | Vast.ai true VM bootstrap, workspace restore, and periodic backup setup |
+| `workstation/` | Vendor-agnostic Ubuntu cloud workstation bootstrap |
 
-Keep provider-specific or domain-specific automation isolated in its own top-level directory.
+The workstation bootstrap targets fresh Ubuntu 22.04/24.04 VMs from any provider.
+It uses Infisical for secrets, Tailscale for private networking, NoMachine for GUI access,
+and Restic with Cloudflare R2 for `/workspace` persistence.

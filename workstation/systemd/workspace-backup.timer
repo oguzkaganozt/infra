@@ -1,5 +1,5 @@
 [Unit]
-Description=Run periodic Vast workspace backups
+Description=Run periodic workstation workspace backups
 
 [Timer]
 OnBootSec=5min

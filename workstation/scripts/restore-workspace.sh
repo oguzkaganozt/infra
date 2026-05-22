@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV_FILE="${ENV_FILE:-/etc/vast-workspace.env}"
+ENV_FILE="${ENV_FILE:-/etc/workstation.env}"
 if [[ -f "$ENV_FILE" ]]; then
+  set -a
   # shellcheck disable=SC1090
   source "$ENV_FILE"
+  set +a
 fi
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
@@ -15,23 +17,14 @@ if [[ -z "${RESTIC_REPOSITORY:-}" || -z "${RESTIC_PASSWORD:-}" ]]; then
   exit 1
 fi
 
-if [[ ! -d "$WORKSPACE_DIR" ]]; then
-  printf 'Workspace directory does not exist: %s\n' "$WORKSPACE_DIR" >&2
-  exit 1
-fi
-
 if ! restic snapshots --tag "$RESTIC_TAG" >/dev/null 2>&1; then
   restic init
 fi
 
-restic backup "$WORKSPACE_DIR" \
-  --tag "$RESTIC_TAG" \
-  --exclude-caches \
-  --one-file-system
+if ! restic snapshots --tag "$RESTIC_TAG" | grep -q "$RESTIC_TAG"; then
+  printf 'No snapshots found for tag %s.\n' "$RESTIC_TAG"
+  exit 0
+fi
 
-restic forget \
-  --tag "$RESTIC_TAG" \
-  --keep-hourly 24 \
-  --keep-daily 14 \
-  --keep-weekly 8 \
-  --prune
+mkdir -p "$WORKSPACE_DIR"
+restic restore latest --target / --tag "$RESTIC_TAG"

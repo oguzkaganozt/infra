@@ -1,0 +1,124 @@
+# workstation
+
+Vendor-agnostic bootstrap for disposable Ubuntu cloud workstations.
+
+The target is any fresh Ubuntu 22.04 or 24.04 VM from any provider. Create the VM however you prefer, pass only Infisical bootstrap credentials, and run one command. The bootstrap handles secrets, networking, GUI access, workspace restore, and backups.
+
+## Stack
+
+| Component | Purpose |
+|---|---|
+| Infisical | Secrets source of truth |
+| Tailscale | Stable private networking and SSH |
+| NoMachine | Remote GUI desktop on port `4000` |
+| Restic | Encrypted `/workspace` snapshots |
+| Cloudflare R2 | S3-compatible object storage backend |
+| systemd | Periodic and shutdown backups |
+
+## Bootstrap
+
+Set only these on the VM or in the provider startup environment:
+
+```bash
+export INFISICAL_CLIENT_ID='<machine-identity-client-id>'
+export INFISICAL_CLIENT_SECRET='<machine-identity-client-secret>'
+export INFISICAL_PROJECT_ID='<project-id>'
+export INFISICAL_ENV='prod'
+```
+
+Then run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oguzkaganozt/infra/main/workstation/bootstrap.sh | sudo -E bash
+```
+
+Optional bootstrap variables:
+
+```bash
+export INFISICAL_API_URL='https://app.infisical.com'
+export INFISICAL_SECRET_PATH='/'
+export WORKSTATION_REPO_BRANCH='main'
+export WORKSTATION_REPO_DIR='/opt/workstation-infra'
+```
+
+## Infisical Secrets
+
+Create one Infisical project, for example `workstation`, with a `prod` environment. Add a Universal Auth machine identity to that project and give it access to read the environment secrets.
+
+Store these secrets in Infisical:
+
+```bash
+TS_AUTHKEY='<tailscale-auth-key>'
+TS_HOSTNAME='gpu-workstation'
+TS_ENABLE_SSH='1'
+
+NOMACHINE_USER='workstation'
+NOMACHINE_PASSWORD='password'
+INSTALL_NOMACHINE='1'
+NOMACHINE_DEB_URL='https://www.nomachine.com/free/linux/64/deb'
+
+RESTIC_REPOSITORY='s3:https://<cloudflare-account-id>.r2.cloudflarestorage.com/<bucket>/main'
+RESTIC_PASSWORD='<restic-encryption-password>'
+AWS_ACCESS_KEY_ID='<r2-access-key-id>'
+AWS_SECRET_ACCESS_KEY='<r2-secret-access-key>'
+AWS_DEFAULT_REGION='auto'
+
+WORKSPACE_DIR='/workspace'
+RESTIC_TAG='workspace'
+INSTALL_SYSTEMD_TIMER='1'
+INSTALL_UFW='1'
+```
+
+The provider only sees the Infisical machine identity credentials. Real workstation secrets are fetched at bootstrap and written root-only to `/etc/workstation.env`.
+
+## Access
+
+Use Tailscale endpoints instead of provider public IPs or random port mappings:
+
+```text
+SSH: ssh workstation@gpu-workstation
+NoMachine: gpu-workstation:4000
+Jupyter: http://gpu-workstation:8888
+Gradio: http://gpu-workstation:7860
+Dev server: http://gpu-workstation:3000
+FastAPI: http://gpu-workstation:8000
+Web app: http://gpu-workstation:8080
+```
+
+Run this on the VM for current connection and backup details:
+
+```bash
+workstation-info
+```
+
+## Persistence
+
+Only `WORKSPACE_DIR` is backed up and restored. The default is:
+
+```text
+/workspace
+```
+
+Backups run every 15 minutes after the first boot delay:
+
+```text
+OnBootSec=5min
+OnUnitActiveSec=15min
+```
+
+A shutdown backup service also attempts a final best-effort backup during graceful shutdown.
+
+Manual commands:
+
+```bash
+backup-workspace
+restore-workspace
+systemctl status workspace-backup.timer
+```
+
+## Notes
+
+- Treat the VM disk as disposable.
+- Keep long-running work under `/workspace`.
+- Use different `RESTIC_TAG` values if running multiple active workstations against the same Restic repository.
+- `INSTALL_UFW=1` allows SSH and all traffic on `tailscale0`, but keeps NoMachine and dev ports private to Tailscale by default.

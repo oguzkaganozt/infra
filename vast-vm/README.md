@@ -66,6 +66,26 @@ apt-get update && apt-get install -y git ca-certificates && git clone https://gi
 
 If this repo is private, use a read-only deploy key or fine-grained token to clone it. Prefer a deploy key over embedding a long-lived personal token in the Vast template.
 
+## Vast.ai Template
+
+A private Vast.ai template has been created for this setup:
+
+```text
+Name: vast-vm-workspace
+Template ID: 431096
+Template hash: b67fcc6880f02346df1dd91d9e338e25
+Image: docker.io/vastai/kvm:ubuntu_terminal
+Disk: 100 GB recommended
+Filters: vms_enabled=true
+```
+
+To launch from CLI, search for a VM-capable offer and create an instance with the template hash:
+
+```bash
+vastai search offers 'vms_enabled=true verified=true rentable=true rented=false'
+vastai create instance <offer-id> --template_hash b67fcc6880f02346df1dd91d9e338e25 --disk 100
+```
+
 ## Manual Commands
 
 After bootstrap, these commands are available on the VM:

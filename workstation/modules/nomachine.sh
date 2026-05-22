@@ -29,7 +29,7 @@ install_nomachine() {
   ) &
   watchdog_pid="$!"
 
-  if ! timeout "${NOMACHINE_INSTALL_TIMEOUT:-1800}" apt_get install -y "$deb_path"; then
+  if ! timeout "${NOMACHINE_INSTALL_TIMEOUT:-1800}" apt-get -o DPkg::Lock::Timeout=600 install -y "$deb_path"; then
     kill "$watchdog_pid" 2>/dev/null || true
     wait "$watchdog_pid" 2>/dev/null || true
     rm -f "$deb_path"

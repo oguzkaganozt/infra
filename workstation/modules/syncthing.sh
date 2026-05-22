@@ -8,13 +8,22 @@ syncthing_home() {
 }
 
 install_syncthing() {
-	if command -v syncthing >/dev/null 2>&1; then
-		log "Syncthing is already installed"
-		return
-	fi
+	log "Installing/updating Syncthing"
+	ensure_apt_packages ca-certificates curl gnupg
 
-	log "Installing Syncthing"
-	ensure_apt_packages syncthing
+	install -d -m 0755 /usr/share/keyrings /etc/apt/sources.list.d
+	local keyring=/usr/share/keyrings/syncthing-archive-keyring.gpg
+	local source_file=/etc/apt/sources.list.d/syncthing.list
+	local tmp_keyring
+	tmp_keyring="$(mktemp)"
+	curl -fsSL https://syncthing.net/release-key.gpg | gpg --dearmor >"$tmp_keyring"
+	install -m 0644 "$tmp_keyring" "$keyring"
+	rm -f "$tmp_keyring"
+	printf 'deb [signed-by=%s] https://apt.syncthing.net/ syncthing stable\n' "$keyring" >"$source_file"
+
+	apt_get update
+	export WORKSTATION_APT_UPDATED=1
+	apt_get install -y syncthing
 }
 
 configure_syncthing_workspace() {
@@ -40,7 +49,7 @@ configure_syncthing_workspace() {
 		chown "$user_name:$user_name" "$workspace_dir"
 	fi
 	chown -R "$user_name:$user_name" "$home_dir"
-	sudo -H -u "$user_name" syncthing generate --home="$home_dir" --no-port-probing >/dev/null
+	sudo -H -u "$user_name" syncthing generate --home="$home_dir" --skip-port-probing >/dev/null
 
 	SYNCTHING_GUI_ADDRESS="${SYNCTHING_GUI_ADDRESS:-$(workstation_config_default SYNCTHING_GUI_ADDRESS)}"
 	SYNCTHING_PEER_ADDRESS="${SYNCTHING_PEER_ADDRESS:-$(workstation_config_default SYNCTHING_PEER_ADDRESS)}"

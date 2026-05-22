@@ -24,9 +24,11 @@ install_helper_scripts() {
   local source_dir="$1"
 
   log "Installing helper scripts"
-  install -m 0755 "$source_dir/restore-workspace.sh" /usr/local/bin/restore-workspace
-  install -m 0755 "$source_dir/backup-workspace.sh" /usr/local/bin/backup-workspace
+  install -m 0755 "$source_dir/workstation-restore-workspace.sh" /usr/local/bin/workstation-restore-workspace
+  install -m 0755 "$source_dir/workstation-backup-workspace.sh" /usr/local/bin/workstation-backup-workspace
   install -m 0755 "$source_dir/workstation-info.sh" /usr/local/bin/workstation-info
+
+  rm -f /usr/local/bin/restore-workspace /usr/local/bin/backup-workspace
 }
 
 restore_workspace() {
@@ -41,7 +43,7 @@ restore_workspace() {
   fi
 
   log "Restoring latest workspace snapshot"
-  if ! /usr/local/bin/restore-workspace; then
+  if ! /usr/local/bin/workstation-restore-workspace; then
     log "Restore failed or no snapshot exists; continuing with empty workspace"
   fi
 

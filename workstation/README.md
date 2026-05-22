@@ -124,8 +124,8 @@ A shutdown backup service also attempts a final best-effort backup during gracef
 Manual commands:
 
 ```bash
-backup-workspace
-restore-workspace
+workstation-backup-workspace
+workstation-restore-workspace
 systemctl status workspace-backup.timer
 ```
 

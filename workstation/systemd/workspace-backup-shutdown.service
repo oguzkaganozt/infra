@@ -10,7 +10,7 @@ Type=oneshot
 RemainAfterExit=yes
 EnvironmentFile=/etc/workstation.env
 ExecStart=/bin/true
-ExecStop=/usr/local/bin/backup-workspace
+ExecStop=/usr/local/bin/workstation-backup-workspace
 TimeoutStopSec=30min
 
 [Install]

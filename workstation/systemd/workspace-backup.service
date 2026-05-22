@@ -6,4 +6,4 @@ After=network-online.target
 [Service]
 Type=oneshot
 EnvironmentFile=/etc/workstation.env
-ExecStart=/usr/local/bin/backup-workspace
+ExecStart=/usr/local/bin/workstation-backup-workspace

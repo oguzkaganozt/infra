@@ -12,6 +12,7 @@ install_helper_scripts() {
 	install -m 0755 "$source_dir/workstation-sync-info.sh" /usr/local/bin/workstation-sync-info
 
 	install -d -m 0755 /usr/local/lib/workstation
+	install -m 0644 "$lib_dir/config.sh" /usr/local/lib/workstation/config.sh
 	install -m 0644 "$lib_dir/env.sh" /usr/local/lib/workstation/env.sh
 
 	rm -f /usr/local/bin/restore-workspace /usr/local/bin/backup-workspace

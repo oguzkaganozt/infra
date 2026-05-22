@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 syncthing_home() {
-	local user_name="${WORKSTATION_USER:-workstation}"
+	local user_name="${WORKSTATION_USER:-$(workstation_config_default WORKSTATION_USER)}"
 	local user_home
 	user_home="$(getent passwd "$user_name" | cut -d: -f6)"
 	printf '%s' "${SYNCTHING_HOME:-$user_home/.local/state/syncthing}"
@@ -18,8 +18,8 @@ install_syncthing() {
 }
 
 configure_syncthing_workspace() {
-	local user_name="${WORKSTATION_USER:-workstation}"
-	local workspace_dir="${WORKSPACE_DIR:-/workspace}"
+	local user_name="${WORKSTATION_USER:-$(workstation_config_default WORKSTATION_USER)}"
+	local workspace_dir="${WORKSPACE_DIR:-$(workstation_config_default WORKSPACE_DIR)}"
 	local home_dir
 	local created_workspace=0
 	home_dir="$(syncthing_home)"
@@ -42,20 +42,26 @@ configure_syncthing_workspace() {
 	chown -R "$user_name:$user_name" "$home_dir"
 	sudo -H -u "$user_name" syncthing generate --home="$home_dir" --no-port-probing >/dev/null
 
+	SYNCTHING_GUI_ADDRESS="${SYNCTHING_GUI_ADDRESS:-$(workstation_config_default SYNCTHING_GUI_ADDRESS)}"
+	SYNCTHING_PEER_ADDRESS="${SYNCTHING_PEER_ADDRESS:-$(workstation_config_default SYNCTHING_PEER_ADDRESS)}"
+	SYNCTHING_PEER_NAME="${SYNCTHING_PEER_NAME:-$(workstation_config_default SYNCTHING_PEER_NAME)}"
+	SYNCTHING_RESCAN_INTERVAL="${SYNCTHING_RESCAN_INTERVAL:-$(workstation_config_default SYNCTHING_RESCAN_INTERVAL)}"
+	export SYNCTHING_GUI_ADDRESS SYNCTHING_PEER_ADDRESS SYNCTHING_PEER_NAME SYNCTHING_RESCAN_INTERVAL
+
 	SYNCTHING_HOME_DIR="$home_dir" python3 - <<'PY'
 import os
 import xml.etree.ElementTree as ET
 
 home = os.environ["SYNCTHING_HOME_DIR"]
 config_path = os.path.join(home, "config.xml")
-workspace_dir = os.environ.get("WORKSPACE_DIR", "/workspace")
-folder_id = os.environ.get("SYNCTHING_FOLDER_ID", "workspace")
-folder_label = os.environ.get("SYNCTHING_FOLDER_LABEL", "workspace")
+workspace_dir = os.environ["WORKSPACE_DIR"]
+folder_id = os.environ["SYNCTHING_FOLDER_ID"]
+folder_label = os.environ["SYNCTHING_FOLDER_LABEL"]
 peer_ids_raw = os.environ.get("SYNCTHING_PEER_DEVICE_IDS") or os.environ.get("SYNCTHING_PEER_DEVICE_ID", "")
 peer_ids = [peer.strip() for peer in peer_ids_raw.replace(";", ",").split(",") if peer.strip()]
-peer_name = os.environ.get("SYNCTHING_PEER_NAME", "sync-node")
-peer_address = os.environ.get("SYNCTHING_PEER_ADDRESS", "dynamic")
-role = os.environ.get("WORKSTATION_ROLE", "workstation")
+peer_name = os.environ["SYNCTHING_PEER_NAME"]
+peer_address = os.environ["SYNCTHING_PEER_ADDRESS"]
+role = os.environ["WORKSTATION_ROLE"]
 
 tree = ET.parse(config_path)
 root = tree.getroot()
@@ -65,7 +71,7 @@ if gui is not None:
     address = gui.find("address")
     if address is None:
         address = ET.SubElement(gui, "address")
-    address.text = os.environ.get("SYNCTHING_GUI_ADDRESS", "127.0.0.1:8384")
+    address.text = os.environ["SYNCTHING_GUI_ADDRESS"]
 
 local_device = root.find("device")
 if local_device is None or not local_device.get("id"):
@@ -86,7 +92,7 @@ if folder is None:
 folder.set("label", folder_label)
 folder.set("path", workspace_dir)
 folder.set("type", "sendreceive")
-folder.set("rescanIntervalS", os.environ.get("SYNCTHING_RESCAN_INTERVAL", "3600"))
+folder.set("rescanIntervalS", os.environ["SYNCTHING_RESCAN_INTERVAL"])
 folder.set("fsWatcherEnabled", "true")
 folder.set("fsWatcherDelayS", "10")
 folder.set("ignorePerms", "false")
@@ -128,7 +134,7 @@ PY
 
 install_syncthing_service() {
 	local systemd_dir="$1"
-	local user_name="${WORKSTATION_USER:-workstation}"
+	local user_name="${WORKSTATION_USER:-$(workstation_config_default WORKSTATION_USER)}"
 	local home_dir
 	home_dir="$(syncthing_home)"
 

@@ -13,8 +13,8 @@ install_infisical_cli() {
 }
 
 fetch_infisical_env() {
-	INFISICAL_API_URL="${INFISICAL_API_URL:-https://app.infisical.com}"
-	INFISICAL_SECRET_PATH="${INFISICAL_SECRET_PATH:-/}"
+	INFISICAL_API_URL="${INFISICAL_API_URL:-$(workstation_config_default INFISICAL_API_URL)}"
+	INFISICAL_SECRET_PATH="${INFISICAL_SECRET_PATH:-$(workstation_config_default INFISICAL_SECRET_PATH)}"
 	export INFISICAL_API_URL INFISICAL_DISABLE_UPDATE_CHECK=true
 
 	log "Fetching workstation secrets from Infisical"
@@ -22,15 +22,15 @@ fetch_infisical_env() {
 	token="${INFISICAL_TOKEN:-}"
 
 	if [[ -z "$token" ]]; then
-		INFISICAL_ENV="${INFISICAL_ENV:-prod}"
+		INFISICAL_ENV="${INFISICAL_ENV:-$(workstation_config_default INFISICAL_ENV)}"
 
 		if [[ -z "${INFISICAL_CLIENT_ID:-}" || -z "${INFISICAL_CLIENT_SECRET:-}" || -z "${INFISICAL_PROJECT_ID:-}" ]]; then
-			if [[ -f "$WORKSTATION_ENV_FILE" ]]; then
-				log "Infisical bootstrap credentials are missing; using existing $WORKSTATION_ENV_FILE"
+			if [[ "${WORKSTATION_ALLOW_CACHED_ENV:-0}" == "1" && -f "$WORKSTATION_ENV_FILE" ]]; then
+				log "Infisical bootstrap credentials are missing; WORKSTATION_ALLOW_CACHED_ENV=1, using existing $WORKSTATION_ENV_FILE"
 				return
 			fi
 
-			die "Set INFISICAL_TOKEN, or set INFISICAL_CLIENT_ID, INFISICAL_CLIENT_SECRET, and INFISICAL_PROJECT_ID"
+			die "Set INFISICAL_TOKEN, or set INFISICAL_CLIENT_ID, INFISICAL_CLIENT_SECRET, and INFISICAL_PROJECT_ID. To reuse existing $WORKSTATION_ENV_FILE, set WORKSTATION_ALLOW_CACHED_ENV=1."
 		fi
 
 		token="$(infisical login \

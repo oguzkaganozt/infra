@@ -69,6 +69,15 @@ export INFISICAL_API_URL='https://app.infisical.com'
 export INFISICAL_SECRET_PATH='/'
 export WORKSTATION_REPO_BRANCH='main'
 export WORKSTATION_REPO_DIR='/opt/workstation-infra'
+# Only for intentional offline re-runs that reuse /etc/workstation.env.
+export WORKSTATION_ALLOW_CACHED_ENV='1'
+```
+
+For a cheaper headless workstation, skip the GUI packages:
+
+```bash
+export INSTALL_DESKTOP='0'
+export INSTALL_NOMACHINE='0'
 ```
 
 Machine identity auth is also supported if you prefer it over service tokens:
@@ -99,7 +108,7 @@ Create `RCLONE_CONFIG_B64` from a working rclone Google Drive config:
 base64 -w0 ~/.config/rclone/rclone.conf
 ```
 
-Everything else has code defaults:
+Everything else has code defaults. `workstation/lib/config.sh` is the source of truth for supported variables and defaults.
 
 | Setting | Default |
 |---|---|
@@ -112,14 +121,20 @@ Everything else has code defaults:
 | `WORKSPACE_CHOWN_RECURSIVE` | `0` |
 | `WORKSTATION_USER` | `workstation` |
 | `RCLONE_REMOTE` | `gdrive` |
+| `RCLONE_CONFIG` | `/etc/workstation-rclone/rclone.conf` |
 | `RCLONE_REMOTE_PATH` | empty, mount the whole remote |
+| `RCLONE_VFS_CACHE_DIR` | `/var/cache/workstation-rclone` |
 | `RCLONE_VFS_CACHE_MAX_SIZE` | `50G` |
 | `RCLONE_VFS_CACHE_MAX_AGE` | `24h` |
+| `RCLONE_DIR_CACHE_TIME` | `1h` |
+| `RCLONE_POLL_INTERVAL` | `1m` |
 | `NOMACHINE_DEB_URL` | `https://www.nomachine.com/free/linux/64/deb` |
+| `NOMACHINE_INSTALL_TIMEOUT` | `1800` |
 | `INSTALL_DESKTOP` | `1` |
 | `DESKTOP_PACKAGES` | `xfce4 xfce4-goodies dbus-x11 x11-xserver-utils` |
 | `INSTALL_NOMACHINE` | `1` |
 | `TS_ENABLE_SSH` | `1` |
+| `WORKSTATION_ALLOW_CACHED_ENV` | `0` |
 
 For the persistent VPS, set:
 
@@ -145,7 +160,9 @@ GITHUB_TOKEN='<fine-grained-github-token>'
 
 When present, bootstrap logs in with `gh auth login --with-token` as `WORKSTATION_USER` and runs `gh auth setup-git`, so HTTPS `git clone`, `git pull`, and `git push` work through GitHub CLI credentials.
 
-The provider only sees the Infisical bootstrap token or machine identity credentials. Real workstation secrets are fetched at bootstrap and written root-only to `/etc/workstation.env`.
+The provider only sees the Infisical bootstrap token or machine identity credentials. Real workstation secrets are fetched at bootstrap and written root-only to `/etc/workstation.env`. Bootstrap will not reuse that cached file unless `WORKSTATION_ALLOW_CACHED_ENV=1` is set, so missing or expired Infisical credentials fail clearly by default.
+
+`RCLONE_CONFIG_B64` is decoded into `RCLONE_CONFIG` and then removed from `/etc/workstation.env`; the decoded rclone config file remains the durable secret artifact.
 
 ## Access
 
@@ -186,4 +203,10 @@ Run the repository validation script before changing bootstrap logic:
 workstation/scripts/verify-source.sh
 ```
 
-The script runs `bash -n`, `shellcheck`, `shfmt -d`, and source-tree systemd verification.
+The script runs `bash -n`, config metadata drift checks, `shellcheck`, `shfmt -d`, source-tree systemd verification, and `cloud-init schema` for `workstation/cloud-init.example.yml` when the tools are available.
+
+Use strict mode locally to fail instead of skipping missing tools:
+
+```bash
+WORKSTATION_STRICT_VALIDATION=1 workstation/scripts/verify-source.sh
+```

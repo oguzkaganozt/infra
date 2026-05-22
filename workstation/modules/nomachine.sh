@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 install_nomachine() {
-	if [[ "${INSTALL_NOMACHINE:-1}" != "1" ]]; then
+	if [[ "${INSTALL_NOMACHINE:-$(workstation_config_default INSTALL_NOMACHINE)}" != "1" ]]; then
 		log "Skipping NoMachine install"
 		return
 	fi
@@ -13,7 +13,7 @@ install_nomachine() {
 
 	log "Installing NoMachine"
 	local deb_path=/tmp/nomachine.deb
-	local deb_url="${NOMACHINE_DEB_URL:-https://www.nomachine.com/free/linux/64/deb}"
+	local deb_url="${NOMACHINE_DEB_URL:-$(workstation_config_default NOMACHINE_DEB_URL)}"
 	local watchdog_pid
 
 	curl -fsSL "$deb_url" -o "$deb_path"
@@ -29,7 +29,7 @@ install_nomachine() {
 	) &
 	watchdog_pid="$!"
 
-	if ! timeout "${NOMACHINE_INSTALL_TIMEOUT:-1800}" apt-get -o DPkg::Lock::Timeout=600 install -y "$deb_path"; then
+	if ! timeout "${NOMACHINE_INSTALL_TIMEOUT:-$(workstation_config_default NOMACHINE_INSTALL_TIMEOUT)}" apt-get -o DPkg::Lock::Timeout=600 install -y "$deb_path"; then
 		kill "$watchdog_pid" 2>/dev/null || true
 		wait "$watchdog_pid" 2>/dev/null || true
 		rm -f "$deb_path"

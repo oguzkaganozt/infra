@@ -16,13 +16,14 @@ install_rclone() {
 
 configure_rclone_config() {
 	local config_dir=/etc/workstation-rclone
-	local config_file="${RCLONE_CONFIG:-$config_dir/rclone.conf}"
+	local config_file="${RCLONE_CONFIG:-$(workstation_config_default RCLONE_CONFIG "$config_dir/rclone.conf")}"
 
 	if [[ -n "${RCLONE_CONFIG_B64:-}" ]]; then
 		log "Writing rclone config from RCLONE_CONFIG_B64"
 		install -d -m 0700 "$(dirname "$config_file")"
 		printf '%s' "$RCLONE_CONFIG_B64" | base64 -d >"$config_file"
 		chmod 0600 "$config_file"
+		remove_rclone_config_b64_from_env
 	elif [[ ! -f "$config_file" ]]; then
 		die "RCLONE_CONFIG_B64 is required, or provide an existing $config_file"
 	fi
@@ -31,10 +32,32 @@ configure_rclone_config() {
 	export RCLONE_CONFIG
 }
 
+remove_rclone_config_b64_from_env() {
+	local env_file="${WORKSTATION_ENV_FILE:-}"
+	[[ -n "$env_file" && -f "$env_file" ]] || return 0
+
+	local tmp_file old_umask line
+	old_umask="$(umask)"
+	umask 077
+	tmp_file="$(mktemp)"
+	umask "$old_umask"
+
+	while IFS= read -r line || [[ -n "$line" ]]; do
+		if [[ "$line" =~ ^[[:space:]]*(export[[:space:]]+)?RCLONE_CONFIG_B64= ]]; then
+			continue
+		fi
+		printf '%s\n' "$line"
+	done <"$env_file" >"$tmp_file"
+
+	install -m 0600 "$tmp_file" "$env_file"
+	rm -f "$tmp_file"
+	unset RCLONE_CONFIG_B64
+}
+
 configure_drive_mount() {
 	local systemd_dir="$1"
-	local mount_dir="${DRIVE_DIR:-/drive}"
-	local user_name="${WORKSTATION_USER:-workstation}"
+	local mount_dir="${DRIVE_DIR:-$(workstation_config_default DRIVE_DIR)}"
+	local user_name="${WORKSTATION_USER:-$(workstation_config_default WORKSTATION_USER)}"
 	local user_id group_id
 
 	if [[ -z "${RCLONE_REMOTE:-}" ]]; then

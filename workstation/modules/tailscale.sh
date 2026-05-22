@@ -29,7 +29,7 @@ configure_tailscale() {
 		args+=(--hostname "$TS_HOSTNAME")
 	fi
 
-	if [[ "${TS_ENABLE_SSH:-1}" == "1" ]]; then
+	if [[ "${TS_ENABLE_SSH:-$(workstation_config_default TS_ENABLE_SSH)}" == "1" ]]; then
 		args+=(--ssh)
 	fi
 

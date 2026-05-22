@@ -1,0 +1,9 @@
+[Unit]
+Description=Back up Vast workspace to restic repository
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/vast-workspace.env
+ExecStart=/usr/local/bin/backup-workspace

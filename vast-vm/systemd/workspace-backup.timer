@@ -1,0 +1,11 @@
+[Unit]
+Description=Run periodic Vast workspace backups
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Persistent=true
+Unit=workspace-backup.service
+
+[Install]
+WantedBy=timers.target

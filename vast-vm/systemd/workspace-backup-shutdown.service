@@ -1,0 +1,17 @@
+[Unit]
+Description=Back up Vast workspace before shutdown
+DefaultDependencies=no
+Before=shutdown.target reboot.target halt.target
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/vast-workspace.env
+ExecStart=/bin/true
+ExecStop=/usr/local/bin/backup-workspace
+TimeoutStopSec=30min
+
+[Install]
+WantedBy=multi-user.target
